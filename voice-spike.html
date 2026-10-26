@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Milestone 0: Voice Feasibility Spike (Edge Chromium)</title>
+  <style>
+    :root {
+      --bg: #090D16;
+      --card: #0F172A;
+      --border: #334155;
+      --text: #F8FAFC;
+      --text-muted: #94A3B8;
+      --accent: #38BDF8;
+      --green: #10B981;
+      --red: #EF4444;
+      --amber: #F59E0B;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 30px;
+      line-height: 1.6;
+    }
+    h1 { font-size: 24px; color: var(--accent); margin-bottom: 8px; }
+    p.subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .badge-pass { background: rgba(16, 185, 129, 0.2); color: var(--green); border: 1px solid var(--green); }
+    .badge-fail { background: rgba(239, 68, 68, 0.2); color: var(--red); border: 1px solid var(--red); }
+    .badge-pending { background: rgba(245, 158, 11, 0.2); color: var(--amber); border: 1px solid var(--amber); }
+
+    .log-box {
+      background: #000000;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 12px;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+      color: #A7F3D0;
+      max-height: 180px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      margin-top: 10px;
+    }
+    button {
+      background: #1E293B;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    button:hover { background: #334155; border-color: var(--accent); }
+    button.btn-primary { background: #0284C7; border-color: #38BDF8; color: #FFFFFF; }
+    button.btn-primary:hover { background: #0369A1; }
+    .flex-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+    select {
+      background: #1E293B;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Milestone 0: Voice Feasibility Spike</h1>
+  <p class="subtitle">Empirical diagnostics for Edge (Chromium) on Windows: On-Device availability, tab audio routing, true acoustic latency, and accent benchmarking.</p>
+
+  <div class="grid">
+    
+    <!-- CHECK 1: ENVIRONMENT & ON-DEVICE CAPABILITY -->
+    <div class="card">
+      <div class="card-title">
+        <span>1. Browser & On-Device Support</span>
+        <span class="badge badge-pending" id="badge-check1">Running...</span>
+      </div>
+      <div id="env-details" style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;"></div>
+      <div class="flex-row">
+        <button id="btn-run-check1" class="btn-primary">Re-Run available() Diagnostics</button>
+      </div>
+      <div class="log-box" id="log-check1"></div>
+    </div>
+
+    <!-- CHECK 2: AUDIO ROUTING (GETDISPLAYMEDIA VS MIC) -->
+    <div class="card">
+      <div class="card-title">
+        <span>2. Meet Tab Audio Routing [start(audioTrack)]</span>
+        <span class="badge badge-pending" id="badge-check2">Untested</span>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">
+        Tests whether Edge can capture a Google Meet tab's audio stream and pass the MediaStreamTrack directly into <code>recognition.start(audioTrack)</code> while you wear a headset.
+      </p>
+      <div class="flex-row">
+        <button id="btn-test-tab-audio" class="btn-primary">Capture Meet Tab Audio</button>
+        <button id="btn-test-mic">Test Local Mic Only</button>
+      </div>
+      <div class="log-box" id="log-check2">Ready. Click 'Capture Meet Tab Audio' and select the Google Meet tab.</div>
+    </div>
+
+    <!-- CHECK 3: TRUE ACOUSTIC SPEECH-TO-RESULT LATENCY -->
+    <div class="card">
+      <div class="card-title">
+        <span>3. True Acoustic Latency Benchmark</span>
+        <span class="badge badge-pending" id="badge-check3">Untested</span>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">
+        Synthesizes the audio phrase <em>"I need to think about it"</em>, plays it through the speakers/loopback, and measures exact milliseconds until the first recognition result containing the phrase is emitted.
+      </p>
+      <div class="flex-row">
+        <button id="btn-run-latency" class="btn-primary">Run Latency Benchmark</button>
+      </div>
+      <div class="log-box" id="log-check3">Ready to measure speech-to-result latency.</div>
+    </div>
+
+    <!-- CHECK 4: ACCENT & VOCABULARY BENCHMARK -->
+    <div class="card">
+      <div class="card-title">
+        <span>4. Dealership Vocab & Accent Compare</span>
+        <span class="badge badge-pending" id="badge-check4">Ready</span>
+      </div>
+      <div class="flex-row">
+        <label for="select-lang" style="font-size: 13px; color: var(--text-muted);">Language:</label>
+        <select id="select-lang">
+          <option value="en-ZA" selected>en-ZA (South Africa)</option>
+          <option value="en-GB">en-GB (UK)</option>
+          <option value="en-US">en-US (US)</option>
+        </select>
+        <button id="btn-start-listen" class="btn-primary">Start Live Dictation</button>
+        <button id="btn-stop-listen">Stop</button>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted);">
+        Speak dealership terms: <em>"Signio decline", "WesBank", "DTI affordability", "think about it", "speak to the dealer principal"</em>.
+      </p>
+      <div class="log-box" id="log-check4">Dictation inactive.</div>
+    </div>
+
+  </div>
+
+  <script>
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    // -------------------------------------------------------------
+    // CHECK 1: BROWSER & ON-DEVICE CAPABILITY
+    // -------------------------------------------------------------
+    async function runCheck1() {
+      const log = document.getElementById('log-check1');
+      const badge = document.getElementById('badge-check1');
+      const envDetails = document.getElementById('env-details');
+      log.textContent = '';
+
+      const ua = navigator.userAgent;
+      const isEdge = ua.includes('Edg/');
+      const edgeVersionMatch = ua.match(/Edg\/([\d.]+)/);
+      const edgeVersion = edgeVersionMatch ? edgeVersionMatch[1] : 'Unknown';
+
+      envDetails.innerHTML = `<strong>Browser:</strong> ${isEdge ? 'Microsoft Edge' : 'Chromium'} | <strong>Version:</strong> ${edgeVersion} | <strong>Platform:</strong> ${navigator.platform}`;
+
+      log.textContent += `[INFO] Detecting SpeechRecognition API...\n`;
+      if (!SpeechRecognition) {
+        log.textContent += `[FAIL] SpeechRecognition / webkitSpeechRecognition NOT supported in this browser.\n`;
+        badge.className = 'badge badge-fail';
+        badge.textContent = 'API Missing';
+        return;
+      }
+      log.textContent += `[PASS] SpeechRecognition interface found.\n`;
+
+      // Check for on-device available() method
+      if (typeof SpeechRecognition.available === 'function') {
+        log.textContent += `[INFO] SpeechRecognition.available() is supported.\n`;
+        try {
+          const resZA = await SpeechRecognition.available({ langs: ['en-ZA'], processLocally: true });
+          log.textContent += `[RESULT] available({ langs: ['en-ZA'], processLocally: true }) => "${resZA}"\n`;
+        } catch (e) {
+          log.textContent += `[RESULT] available(en-ZA, processLocally: true) rejected => ${e.name}: ${e.message}\n`;
+        }
+
+        try {
+          const resUS = await SpeechRecognition.available({ langs: ['en-US'], processLocally: true });
+          log.textContent += `[RESULT] available({ langs: ['en-US'], processLocally: true }) => "${resUS}"\n`;
+        } catch (e) {
+          log.textContent += `[RESULT] available(en-US, processLocally: true) rejected => ${e.name}: ${e.message}\n`;
+        }
+      } else {
+        log.textContent += `[NOTICE] SpeechRecognition.available() static method is NOT exposed on this build.\n`;
+        log.textContent += `[VERDICT] Browser defaults exclusively to vendor cloud speech service (Microsoft Speech Service on Edge).\n`;
+      }
+
+      badge.className = 'badge badge-pass';
+      badge.textContent = 'Inspected';
+    }
+
+    document.getElementById('btn-run-check1').addEventListener('click', runCheck1);
+    runCheck1();
+
+    // -------------------------------------------------------------
+    // CHECK 2: TAB AUDIO ROUTING
+    // -------------------------------------------------------------
+    let tabStream = null;
+    document.getElementById('btn-test-tab-audio').addEventListener('click', async () => {
+      const log = document.getElementById('log-check2');
+      const badge = document.getElementById('badge-check2');
+      log.textContent = `[INFO] Requesting getDisplayMedia with audio: true...\n`;
+
+      try {
+        tabStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: true
+        });
+
+        const audioTracks = tabStream.getAudioTracks();
+        if (audioTracks.length === 0) {
+          log.textContent += `[FAIL] No audio track selected! Ensure 'Share tab audio' checkbox is checked in the browser picker.\n`;
+          badge.className = 'badge badge-fail';
+          badge.textContent = 'No Audio Track';
+          return;
+        }
+
+        const audioTrack = audioTracks[0];
+        log.textContent += `[PASS] Captured Audio Track: label="${audioTrack.label}", id="${audioTrack.id}"\n`;
+
+        // Attempt to pass audioTrack into SpeechRecognition.start(audioTrack)
+        const rec = new SpeechRecognition();
+        rec.continuous = false;
+        rec.interimResults = true;
+
+        log.textContent += `[INFO] Calling recognition.start(audioTrack)...\n`;
+        try {
+          rec.start(audioTrack);
+          log.textContent += `[SUCCESS] recognition.start(audioTrack) accepted without throwing! Edge supports MediaStreamTrack input.\n`;
+          badge.className = 'badge badge-pass';
+          badge.textContent = 'Track Supported';
+        } catch (err) {
+          log.textContent += `[NOTICE] recognition.start(audioTrack) threw: ${err.name} - ${err.message}\n`;
+          log.textContent += `[VERDICT] start(audioTrack) is not supported in this Edge version. Tab audio requires virtual loopback or acoustic mic.\n`;
+          badge.className = 'badge badge-fail';
+          badge.textContent = 'Track Incompatible';
+        }
+
+      } catch (err) {
+        log.textContent += `[ERROR] getDisplayMedia error: ${err.name} - ${err.message}\n`;
+      }
+    });
+
+    document.getElementById('btn-test-mic').addEventListener('click', async () => {
+      const log = document.getElementById('log-check2');
+      log.textContent = `[INFO] Testing default microphone access...\n`;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        log.textContent += `[PASS] Default mic stream active: ${stream.getAudioTracks()[0].label}\n`;
+      } catch (err) {
+        log.textContent += `[FAIL] Mic access failed: ${err.message}\n`;
+      }
+    });
+
+    // -------------------------------------------------------------
+    // CHECK 3: TRUE ACOUSTIC SPEECH-TO-RESULT LATENCY
+    // -------------------------------------------------------------
+    document.getElementById('btn-run-latency').addEventListener('click', () => {
+      const log = document.getElementById('log-check3');
+      const badge = document.getElementById('badge-check3');
+      log.textContent = `[INFO] Initializing SpeechSynthesis playback & SpeechRecognition listener...\n`;
+
+      if (!('speechSynthesis' in window)) {
+        log.textContent += `[ERROR] SpeechSynthesis not supported in this browser.\n`;
+        return;
+      }
+
+      const rec = new SpeechRecognition();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = 'en-US';
+
+      const phrase = "I need to think about it";
+      let startTime = null;
+      let benchmarkCompleted = false;
+
+      rec.onresult = (event) => {
+        const now = performance.now();
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript.toLowerCase();
+          log.textContent += `[HEARD] "${transcript}"\n`;
+
+          if (!benchmarkCompleted && transcript.includes("think about it")) {
+            benchmarkCompleted = true;
+            const latencyMs = Math.round(now - startTime);
+            log.textContent += `\n[BENCHMARK] TRUE SPEECH-TO-RESULT LATENCY: ${latencyMs} ms\n`;
+            badge.className = 'badge badge-pass';
+            badge.textContent = `${latencyMs}ms`;
+            rec.stop();
+          }
+        }
+      };
+
+      rec.onerror = (e) => {
+        log.textContent += `[REC ERROR] ${e.error}\n`;
+      };
+
+      rec.start();
+      log.textContent += `[INFO] Recognizer started. Speaking: "${phrase}"...\n`;
+
+      setTimeout(() => {
+        const utter = new SpeechSynthesisUtterance(phrase);
+        utter.rate = 1.0;
+        utter.onstart = () => {
+          startTime = performance.now();
+          log.textContent += `[PLAYBACK START] Audio output began at t=0\n`;
+        };
+        window.speechSynthesis.speak(utter);
+      }, 500);
+    });
+
+    // -------------------------------------------------------------
+    // CHECK 4: ACCENT & VOCABULARY BENCHMARK
+    // -------------------------------------------------------------
+    let liveRec = null;
+    const btnStartListen = document.getElementById('btn-start-listen');
+    const btnStopListen = document.getElementById('btn-stop-listen');
+    const selectLang = document.getElementById('select-lang');
+    const logCheck4 = document.getElementById('log-check4');
+
+    btnStartListen.addEventListener('click', () => {
+      if (liveRec) liveRec.stop();
+
+      liveRec = new SpeechRecognition();
+      liveRec.continuous = true;
+      liveRec.interimResults = true;
+      liveRec.lang = selectLang.value;
+
+      logCheck4.textContent = `[LISTENING] Mode: ${selectLang.value}. Speak dealership terms...\n`;
+
+      liveRec.onresult = (event) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const res = event.results[i];
+          const text = res[0].transcript;
+          const conf = Math.round(res[0].confidence * 100);
+          logCheck4.textContent += `[${res.isFinal ? 'FINAL' : 'INTERIM'}] (${conf}%) "${text}"\n`;
+          logCheck4.scrollTop = logCheck4.scrollHeight;
+        }
+      };
+
+      liveRec.onerror = (e) => {
+        logCheck4.textContent += `[ERROR] ${e.error}\n`;
+      };
+
+      liveRec.onend = () => {
+        logCheck4.textContent += `[STOPPED] Recognition ended.\n`;
+      };
+
+      liveRec.start();
+    });
+
+    btnStopListen.addEventListener('click', () => {
+      if (liveRec) liveRec.stop();
+    });
+
+  </script>
+</body>
+</html>

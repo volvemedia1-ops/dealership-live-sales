@@ -1,0 +1,2030 @@
+/* ==========================================================================
+   DEALERSHIP LIVE SALES COCKPIT (EDGE CHROMIUM) - HIGH-CONTRAST SOLID THEME
+   Strict Minimalism: No glassmorphism, zero blur filters, solid dark surfaces.
+   Webcam Focal Line: Upper-third layout, 28px base rep speech, 16px #C084FC cues.
+   ========================================================================== */
+
+:root {
+  --bg-main: #090D16;
+  --bg-sidebar: #0F172A;
+  --bg-card: #1E293B;
+  --bg-card-active: #1E293B;
+  --border-subtle: #334155;
+  --border-accent: #3B82F6;
+  
+  --text-primary: #FFFFFF;
+  --text-muted: #94A3B8;
+  --text-cue: #C084FC;         /* Light purple, >7:1 contrast ratio */
+  --text-prospect: #FBBF24;    /* Warm amber gold */
+  --text-accent: #38BDF8;      /* Electric cyan for numbers/tokens */
+  
+  --color-green: #10B981;
+  --color-amber: #F59E0B;
+  --color-red: #EF4444;
+
+  --font-base: 18px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ==========================================================================
+   PANIC SCREEN OVERLAY (HOTKEY 'B')
+   ========================================================================== */
+#panic-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: #000000;
+  z-index: 999999;
+  display: none;
+  cursor: pointer;
+}
+#panic-overlay.active {
+  display: block;
+}
+
+/* ==========================================================================
+   APP LAYOUT: SIDEBAR HUD + UPPER-THIRD WEBCAM STAGE
+   ========================================================================== */
+.cockpit-container {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ==========================================================================
+   SIDEBAR HUD (LEFT PINNED)
+   ========================================================================== */
+.sidebar-hud {
+  background-color: var(--bg-sidebar);
+  border-right: 2px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 16px;
+  overflow-y: auto;
+  user-select: text;
+}
+
+.hud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 12px;
+}
+
+.brand-badge {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-accent);
+  text-transform: uppercase;
+}
+
+.font-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-ctrl {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn-ctrl:hover {
+  border-color: var(--text-accent);
+}
+
+/* 15-MINUTE PACING TIMER */
+.timer-card {
+  background: var(--bg-main);
+  border: 2px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.timer-digits {
+  font-size: 42px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+  color: var(--color-green);
+  margin-bottom: 4px;
+}
+.timer-digits.phase-2 { color: var(--color-amber); }
+.timer-digits.phase-3 { color: var(--color-red); }
+.timer-digits.overtime {
+  color: var(--color-red);
+  animation: pulse-red 1s infinite;
+}
+
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.timer-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.timer-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.timer-btn {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+}
+.timer-btn.active {
+  background: var(--border-accent);
+}
+
+/* REACTIVE BLEED CALCULATOR */
+.calc-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.calc-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-accent);
+  letter-spacing: 0.5px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.calc-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.calc-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+.calc-input {
+  background: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+.calc-input:focus {
+  border-color: var(--text-accent);
+}
+
+.calc-bleed-summary {
+  background: var(--bg-main);
+  border-left: 3px solid var(--color-red);
+  padding: 8px 10px;
+  border-radius: 0 4px 4px 0;
+  margin-top: 4px;
+}
+.calc-bleed-text {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.calc-bleed-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-red);
+  font-variant-numeric: tabular-nums;
+}
+
+/* OBJECTION HUD BUTTONS */
+.objection-triggers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.obj-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.obj-btn:hover {
+  background: #253347;
+  border-color: var(--text-accent);
+}
+.obj-btn.active-obj {
+  border-color: var(--color-amber);
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.obj-btn-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 6px;
+}
+
+.obj-btn-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.obj-reorder-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 9px;
+  line-height: 1;
+  transition: all 0.15s;
+}
+
+.obj-reorder-btn:hover:not(:disabled) {
+  color: var(--color-amber);
+  background: rgba(245, 158, 11, 0.15);
+  border-color: var(--color-amber);
+}
+
+.obj-reorder-btn:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.hotkey-badge {
+  background: #090D16;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-accent);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* HOTKEY CHEATSHEET */
+.cheatsheet {
+  margin-top: auto;
+  font-size: 11px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 12px;
+  line-height: 1.6;
+}
+.cheatsheet kbd {
+  background: var(--bg-card);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   TELEPROMPTER VIEWPORT & WEBCAM FOCAL LINE
+   ========================================================================== */
+.teleprompter-viewport {
+  position: relative;
+  height: 100vh;
+  overflow-y: scroll;
+  scroll-behavior: smooth;
+  padding: 0 40px;
+}
+
+/* Upper-third focal marker (subtle visual indicator for eye level) */
+.webcam-eye-line {
+  position: fixed;
+  top: 25%;
+  left: 360px;
+  right: 0;
+  height: 2px;
+  background: rgba(59, 130, 246, 0.15);
+  pointer-events: none;
+  z-index: 50;
+}
+.webcam-eye-label {
+  position: absolute;
+  right: 20px;
+  top: -18px;
+  font-size: 11px;
+  color: rgba(59, 130, 246, 0.5);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Teleprompter stage padding so first block lands on the eye line */
+.script-stage {
+  padding-top: 25vh;
+  padding-bottom: 60vh;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* SCRIPT BLOCKS */
+.script-block {
+  background: var(--bg-card);
+  border: 2px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 28px 32px;
+  transition: opacity 0.25s, border-color 0.25s;
+  opacity: 0.25; /* Dimmed inactive blocks */
+  cursor: pointer;
+}
+
+.script-block.active-block {
+  opacity: 1.0;
+  border-color: var(--border-accent);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+}
+
+.block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 10px;
+}
+
+.block-phase-badge {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-accent);
+}
+
+.block-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* REP SPOKEN COPY - STANDOUT HIGH CONTRAST */
+.block-text {
+  font-size: var(--font-base);
+  font-weight: 600;
+  line-height: 1.6;
+  color: #38BDF8; /* Electric Sky Cyan - high contrast standout */
+  white-space: pre-line;
+  margin-bottom: 20px;
+}
+
+.script-block.active-block .block-text {
+  color: #7DD3FC; /* Radiant high-luminance Cyan */
+  text-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+}
+
+body.mode-coldcall .block-text {
+  color: #34D399; /* Radiant Electric Mint for Cold Call */
+}
+
+body.mode-coldcall .script-block.active-block .block-text {
+  color: #6EE7B7; /* Vivid Luminous Mint */
+  text-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+}
+
+/* DYNAMIC TOKENS */
+.token {
+  color: var(--text-accent);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px dashed var(--text-accent);
+  padding: 0 2px;
+}
+
+/* PROSPECT EXPECTED RESPONSE CUE */
+.cue-container {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+.cue-text {
+  color: var(--text-prospect);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* STAGE NOTE / BODY LANGUAGE */
+.stage-note {
+  color: var(--text-cue);
+  font-size: 16px;
+  font-weight: 500;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   SCROLLABLE OBJECTION BATTLECARD SLOT (TOP RIGHT)
+   ========================================================================== */
+#fixed-objection-slot {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  width: 480px;
+  max-height: calc(100vh - 48px);
+  background: #111827;
+  border: 2px solid var(--color-amber);
+  border-radius: 12px;
+  padding: 0 24px 24px 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+  z-index: 9999;
+  display: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(245, 158, 11, 0.45) rgba(17, 24, 39, 0.8);
+  animation: slide-in 0.2s ease-out;
+}
+#fixed-objection-slot.visible {
+  display: block;
+}
+
+/* Custom sleek scrollbar for objection card */
+#fixed-objection-slot::-webkit-scrollbar {
+  width: 6px;
+}
+#fixed-objection-slot::-webkit-scrollbar-track {
+  background: rgba(17, 24, 39, 0.8);
+  border-radius: 4px;
+}
+#fixed-objection-slot::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.45);
+  border-radius: 4px;
+}
+#fixed-objection-slot::-webkit-scrollbar-thumb:hover {
+  background: var(--color-amber);
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.obj-slot-header {
+  position: sticky;
+  top: 0;
+  background: #111827;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-top: 18px;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+.obj-slot-title {
+  color: var(--color-amber);
+  font-size: 16px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.obj-slot-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.obj-slot-close:hover {
+  color: #FFFFFF;
+}
+.obj-slot-summary {
+  font-size: 14px;
+  color: var(--text-accent);
+  font-weight: 700;
+  margin-bottom: 10px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+.obj-slot-script {
+  font-size: 20px;
+  line-height: 1.5;
+  color: #FFFFFF;
+  white-space: pre-line;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 600px) {
+  #fixed-objection-slot {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-height: calc(100vh - 24px);
+    padding: 0 16px 16px 16px;
+  }
+  .obj-slot-header {
+    padding-top: 14px;
+  }
+  .obj-slot-script {
+    font-size: 17px;
+  }
+}
+
+/* ==========================================================================
+   IN-BROWSER SCRIPT EDIT MODE
+   ========================================================================== */
+.btn-ctrl.active-edit {
+  background: var(--color-amber);
+  color: #000000;
+  border-color: var(--color-amber);
+  font-weight: 800;
+}
+
+#edit-mode-banner {
+  position: fixed;
+  top: 0;
+  left: 360px;
+  right: 0;
+  background: #1E293B;
+  border-bottom: 2px solid var(--color-amber);
+  padding: 10px 24px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 100;
+  font-size: 14px;
+}
+#edit-mode-banner.active {
+  display: flex;
+}
+
+.edit-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-weight: 700;
+  color: var(--color-amber);
+}
+
+.edit-banner-title {
+  white-space: nowrap;
+}
+
+.edit-format-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(15, 23, 42, 0.75);
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.format-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.format-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.btn-color-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
+}
+.btn-color-swatch:hover {
+  transform: scale(1.25);
+  border-color: #FFFFFF;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.custom-color-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.custom-color-picker:hover {
+  border-color: var(--text-accent);
+  background: rgba(255, 255, 255, 0.2);
+}
+.custom-color-picker input[type="color"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.btn-hl-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 2px solid;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
+}
+.btn-hl-swatch:hover {
+  transform: scale(1.25);
+  box-shadow: 0 0 8px currentColor;
+}
+
+.btn-hl-clear, .btn-format-clear {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-hl-clear:hover, .btn-format-clear:hover {
+  color: #FFFFFF;
+  border-color: var(--text-accent);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.format-divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+mark {
+  background-color: rgba(245, 158, 11, 0.35);
+  color: inherit;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.edit-banner-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-edit-action {
+  background: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-edit-action:hover {
+  border-color: var(--text-accent);
+}
+.btn-save-disk {
+  background: #0284C7;
+  border-color: #38BDF8;
+  color: #FFFFFF;
+}
+.btn-save-disk:hover {
+  background: #0369A1;
+}
+
+/* EDITABLE BLOCKS */
+.is-editing .script-block {
+  opacity: 0.95 !important;
+  cursor: default;
+}
+.is-editing .block-text {
+  border: 1px dashed rgba(56, 189, 248, 0.5);
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.8);
+  cursor: text;
+  user-select: text;
+  color: var(--text-primary);
+}
+.is-editing .block-text:focus {
+  border-color: #38BDF8;
+  outline: none;
+}
+.is-editing .cue-text,
+.is-editing .stage-note {
+  cursor: text;
+  user-select: text;
+}
+
+.is-editing .block-phase,
+.is-editing .block-section {
+  border-bottom: 1px dashed rgba(56, 189, 248, 0.5);
+  cursor: text;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.is-editing .block-phase:focus,
+.is-editing .block-section:focus {
+  border-color: #38BDF8;
+  outline: none;
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.is-editing #obj-slot-title,
+.is-editing #obj-slot-summary,
+.is-editing #obj-slot-script {
+  border: 1px dashed rgba(245, 158, 11, 0.6);
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: text;
+}
+.is-editing #obj-slot-title:focus,
+.is-editing #obj-slot-summary:focus,
+.is-editing #obj-slot-script:focus {
+  border-color: var(--color-amber);
+  outline: none;
+  background: rgba(245, 158, 11, 0.12);
+}
+
+/* SPECIFIC ADDED/MODIFIED WORDS HIGHLIGHT (STANDS OUT IN ELECTRIC CYAN) */
+.custom-word-added {
+  color: #38BDF8 !important; /* Electric Cyan on the exact words added or modified */
+  font-weight: 700;
+  text-decoration: underline 2px rgba(56, 189, 248, 0.6);
+  text-underline-offset: 3px;
+  background: rgba(56, 189, 248, 0.14);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.custom-edit-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.6);
+  color: #38BDF8;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   LAUNCH MODE SELECTION MODAL (AESTHETIC MINIMAL MODERN APP)
+   ========================================================================== */
+.mode-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: #000000;
+  background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(56, 189, 248, 0.08), transparent 70%);
+  z-index: 999998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+  animation: fadeInModal 0.25s ease-out;
+}
+
+@keyframes fadeInModal {
+  from { opacity: 0; transform: scale(0.99); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.mode-modal-card {
+  max-width: 960px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: none;
+}
+
+.mode-modal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #A1A1AA;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  margin-bottom: 18px;
+  backdrop-filter: blur(8px);
+}
+
+.badge-pulse-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #10B981;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.mode-modal-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #EDEDED;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.mode-modal-subtitle {
+  font-size: 14px;
+  color: #71717A;
+  margin: 0 0 32px 0;
+  letter-spacing: -0.01em;
+}
+
+.mode-modal-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+.btn-mode-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 22px 20px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  backdrop-filter: blur(16px);
+  position: relative;
+  user-select: none;
+}
+
+.btn-mode-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.btn-mode-card.card-coldcall:hover {
+  border-color: rgba(16, 185, 129, 0.45);
+  box-shadow: 0 12px 32px -8px rgba(16, 185, 129, 0.12), inset 0 1px 0 rgba(16, 185, 129, 0.2);
+}
+
+.btn-mode-card.card-closer:hover {
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: 0 12px 32px -8px rgba(56, 189, 248, 0.12), inset 0 1px 0 rgba(56, 189, 248, 0.2);
+}
+
+.btn-mode-card.card-cbfleads:hover {
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow: 0 12px 32px -8px rgba(245, 158, 11, 0.12), inset 0 1px 0 rgba(245, 158, 11, 0.2);
+}
+
+.mode-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.mode-card-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: transform 0.2s ease;
+}
+
+.btn-mode-card:hover .mode-card-icon {
+  transform: scale(1.06);
+}
+
+.mode-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.tag-coldcall {
+  color: #34D399;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.tag-closer {
+  color: #38BDF8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.tag-cbfleads {
+  color: #FBBF24;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.mode-kbd {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: #71717A;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  padding: 2px 7px;
+  line-height: 1;
+}
+
+.btn-mode-card:hover .mode-kbd {
+  color: #EDEDED;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.mode-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mode-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mode-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #FFFFFF;
+  letter-spacing: -0.01em;
+}
+
+.card-arrow {
+  font-size: 15px;
+  color: #52525B;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.btn-mode-card:hover .card-arrow {
+  transform: translateX(4px);
+  color: #FFFFFF;
+}
+
+.mode-card-desc {
+  font-size: 12.5px;
+  color: #71717A;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.mode-modal-footer {
+  margin-top: 26px;
+  font-size: 12px;
+  color: #52525B;
+  letter-spacing: 0.01em;
+}
+
+.mode-modal-footer kbd {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: #A1A1AA;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: 0 2px;
+}
+
+/* ==========================================================================
+   MODE SWITCHER (SIDEBAR HUD HEADER)
+   ========================================================================== */
+.mode-switcher {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background-color: #090D16;
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+}
+
+.btn-mode {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-mode:hover {
+  color: #FFFFFF;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.btn-mode.active {
+  background-color: #1E293B;
+  color: #FFFFFF;
+  border: 1px solid #38BDF8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+body.mode-coldcall #btn-mode-coldcall.active {
+  border-color: #10B981;
+  color: #A7F3D0;
+}
+
+body.mode-cbfleads #btn-mode-cbfleads.active {
+  border-color: #F59E0B;
+  color: #FDE68A;
+}
+
+/* ==========================================================================
+   CONDITIONAL FEATURE HIDING FOR COLD CALL MODE
+   ========================================================================== */
+body.mode-coldcall .closer-only-feature {
+  display: none !important;
+}
+
+body.mode-coldcall .objection-triggers {
+  flex-grow: 1;
+}
+
+/* ==========================================================================
+   CONDITIONAL FEATURE HIDING & TOOLS FOR CBF LEADS MODE
+   ========================================================================== */
+.cbfleads-only-feature {
+  display: none !important;
+}
+
+body.mode-cbfleads .closer-only-feature {
+  display: none !important;
+}
+
+body.mode-cbfleads .cbfleads-only-feature {
+  display: flex !important;
+}
+
+body.mode-cbfleads .objection-triggers {
+  flex-grow: 1;
+}
+
+/* COLD CALL VOCAL / SCRIPT HIGHLIGHTS */
+.vocal-cue-badge {
+  display: inline-block;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34D399;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin: 0 4px;
+}
+
+/* ==========================================================================
+   COLD CALL COMPACT VIEWPORT (NO WEBCAM FOCAL LINE DROP)
+   ========================================================================== */
+body.mode-coldcall .script-stage {
+  padding-top: 24px !important;
+  padding-bottom: 80px !important;
+  gap: 20px !important;
+}
+
+/* ==========================================================================
+   F&I QUICK NOTES & EMAIL CAPTURE BOX
+   ========================================================================== */
+.fni-notes-box {
+  background: #111827;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.fni-notes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fni-notes-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #A1A1AA;
+}
+
+.fni-notes-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-notes-tool {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #D1D5DB;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-notes-tool:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+}
+
+.fni-notes-textarea {
+  background: #0B0F19;
+  border: 1px solid #1F2937;
+  border-radius: 6px;
+  color: #F3F4F6;
+  font-family: inherit;
+  font-size: 12.5px;
+  line-height: 1.45;
+  padding: 8px 10px;
+  min-height: 90px;
+  max-height: 160px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.fni-notes-textarea:focus {
+  border-color: #38BDF8;
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.3);
+}
+
+.fni-notes-footer {
+  font-size: 10px;
+  color: #6B7280;
+  text-align: right;
+}
+
+/* ==========================================================================
+   EDIT SCRIPT TOGGLE & ACTIVE EDITING ENHANCEMENTS
+   ========================================================================== */
+.btn-edit-toggle {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38BDF8;
+  font-weight: 700;
+}
+
+.btn-edit-toggle:hover,
+.btn-edit-toggle.active-edit {
+  background: #38BDF8;
+  color: #000000;
+  border-color: #38BDF8;
+}
+
+.is-editing-mode .script-block {
+  opacity: 1 !important;
+  border-style: dashed !important;
+  border-color: rgba(56, 189, 248, 0.5) !important;
+}
+
+.is-editing-mode .block-text,
+.is-editing-mode .cue-text,
+.is-editing-mode .stage-note span {
+  outline: 1px dashed rgba(56, 189, 248, 0.3);
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.03);
+}
+
+.is-editing-mode .block-text:focus,
+.is-editing-mode .cue-text:focus,
+.is-editing-mode .stage-note span:focus {
+  outline: 2px solid #38BDF8 !important;
+  background: rgba(56, 189, 248, 0.08) !important;
+}
+
+/* ==========================================================================
+   DIALOGUE & SPEAKER COLOR ENGINE (COLD CALL TELEPROMPTER)
+   ========================================================================== */
+.scenario-label {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #94A3B8;
+  margin-top: 18px;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.scenario-label:first-child {
+  margin-top: 0;
+}
+
+.dialogue-row {
+  margin: 10px 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background-color 0.15s ease;
+}
+
+/* THOMPSON (COLD CALLER) - ELECTRIC MINT */
+.dialogue-row.speaker-thompson {
+  background: rgba(16, 185, 129, 0.08);
+  border-left: 4px solid #10B981;
+}
+
+.dialogue-row.speaker-thompson:hover {
+  background: rgba(16, 185, 129, 0.13);
+}
+
+.speaker-tag.tag-thompson {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #34D399; /* Radiant Electric Mint */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dialogue-row.speaker-thompson .speaker-speech {
+  color: #6EE7B7; /* High-contrast Vivid Mint for reading */
+  font-size: var(--font-base);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* RECEPTIONIST (GATEKEEPER) - WARM AMBER / GOLD */
+.dialogue-row.speaker-receptionist {
+  background: rgba(245, 158, 11, 0.09);
+  border-left: 4px solid #F59E0B;
+}
+
+.dialogue-row.speaker-receptionist:hover {
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.speaker-tag.tag-receptionist {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #FBBF24; /* Radiant Warm Gold / Amber */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dialogue-row.speaker-receptionist .speaker-speech {
+  color: #FDE68A; /* Soft Luminous Amber for expected dialogue */
+  font-size: var(--font-base);
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* IN-EDIT-MODE DIALOGUE COLORS (KEEPS GATEKEEPER AMBER & THOMPSON MINT WHILE EDITING) */
+.edit-dialogue-line {
+  margin: 4px 0;
+  line-height: 1.6;
+}
+
+.edit-dialogue-line.edit-receptionist,
+.is-editing-mode .edit-receptionist,
+.is-editing .edit-receptionist {
+  color: #FBBF24 !important; /* Warm Amber for Receptionist/Gatekeeper */
+  font-style: italic;
+}
+
+.edit-dialogue-line.edit-thompson,
+.is-editing-mode .edit-thompson,
+.is-editing .edit-thompson {
+  color: #34D399 !important; /* Radiant Electric Mint for Thompson */
+  font-weight: 600;
+}
+
+.edit-dialogue-line.edit-scenario,
+.is-editing-mode .edit-scenario,
+.is-editing .edit-scenario {
+  color: #94A3B8 !important; /* Silver for Scenario */
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   COLD CALL SUB-CHOICE MODAL & PRE-FLIGHT RITUAL VIEW
+   ========================================================================== */
+
+body:not(.mode-coldcall) .coldcall-only-feature {
+  display: none !important;
+}
+
+.subchoice-options {
+  grid-template-columns: repeat(3, 1fr) !important;
+  max-width: 960px;
+}
+
+.btn-mode-card.card-ritual:hover {
+  border-color: rgba(168, 85, 247, 0.45);
+  box-shadow: 0 12px 32px -8px rgba(168, 85, 247, 0.15), inset 0 1px 0 rgba(168, 85, 247, 0.2);
+}
+
+.btn-mode-card.card-script:hover {
+  border-color: rgba(52, 211, 153, 0.45);
+  box-shadow: 0 12px 32px -8px rgba(52, 211, 153, 0.15), inset 0 1px 0 rgba(52, 211, 153, 0.2);
+}
+
+.btn-mode-card.card-followup:hover {
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: 0 12px 32px -8px rgba(56, 189, 248, 0.15), inset 0 1px 0 rgba(56, 189, 248, 0.2);
+}
+
+.tag-ritual {
+  color: #C084FC;
+  background: rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+
+.tag-followup {
+  color: #38BDF8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.btn-ritual-toggle {
+  background: rgba(168, 85, 247, 0.15) !important;
+  border-color: rgba(168, 85, 247, 0.35) !important;
+  color: #C084FC !important;
+}
+
+.btn-ritual-toggle:hover {
+  background: rgba(168, 85, 247, 0.25) !important;
+  border-color: #C084FC !important;
+}
+
+.btn-ritual-toggle.active {
+  background: #A855F7 !important;
+  color: #FFFFFF !important;
+  border-color: #A855F7 !important;
+}
+
+/* --- COLD CALL SUB-NAVIGATION PILL BAR --- */
+.coldcall-subnav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px 8px;
+  background: transparent;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 12px;
+}
+
+.subnav-pill-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card);
+  padding: 4px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-subtle);
+}
+
+.btn-subnav-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn-subnav-pill:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-subnav-pill.active {
+  background: var(--bg-main);
+  color: #FFFFFF;
+  border-color: var(--border-subtle);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+#subnav-firsttouch.active {
+  color: #34D399;
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+#subnav-followup.active {
+  color: #38BDF8;
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+#subnav-ritual.active {
+  color: #C084FC;
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.subnav-icon {
+  font-size: 14px;
+}
+
+.subnav-kbd {
+  font-size: 10px;
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  padding: 1px 4px;
+  color: inherit;
+  opacity: 0.7;
+}
+
+/* --- PRE-FLIGHT RITUAL VIEWPORT --- */
+.precall-ritual-view {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 36px 32px 80px;
+  overflow-y: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  user-select: text;
+}
+
+.ritual-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #C084FC;
+  background: rgba(168, 85, 247, 0.08);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  width: fit-content;
+}
+
+.ritual-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #F8FAFC;
+  letter-spacing: -0.02em;
+  margin-top: 10px;
+}
+
+.ritual-subtitle {
+  font-size: 14px;
+  color: #94A3B8;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+/* Ritual Card Components */
+.ritual-block {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ritual-block-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #38BDF8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ritual-identity-card {
+  border-left: 3px solid #38BDF8;
+}
+
+.ritual-identity-text {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #FFFFFF;
+  line-height: 1.55;
+}
+
+.ritual-zero-stakes {
+  font-size: 13.5px;
+  color: #FBBF24;
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.18);
+  padding: 12px 16px;
+  border-radius: 8px;
+  line-height: 1.5;
+}
+
+/* Bell Curve Grid */
+.ritual-bellcurve-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.bellcurve-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.bellcurve-pct {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.bellcurve-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #FFFFFF;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bellcurve-behavior {
+  font-size: 11px;
+  color: #94A3B8;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.bellcurve-mindset {
+  font-size: 10.5px;
+  color: #CBD5E1;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 8px;
+  border-radius: 6px;
+  line-height: 1.35;
+  border-left: 2px solid currentColor;
+}
+
+.ritual-trader-law {
+  font-size: 12.5px;
+  color: #C084FC;
+  background: rgba(168, 85, 247, 0.06);
+  border: 1px solid rgba(168, 85, 247, 0.18);
+  padding: 10px 14px;
+  border-radius: 8px;
+  line-height: 1.45;
+}
+
+/* Upgrades Rules List */
+.ritual-rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ritual-rule-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px 16px;
+  position: relative;
+}
+
+.rule-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: #34D399;
+  letter-spacing: 0.03em;
+}
+
+.rule-desc {
+  font-size: 13px;
+  color: #CBD5E1;
+  line-height: 1.45;
+}
+
+/* Somatic Grounding */
+.somatic-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.somatic-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.somatic-item-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #38BDF8;
+  letter-spacing: 0.05em;
+}
+
+.somatic-item-desc {
+  font-size: 12.5px;
+  color: #E2E8F0;
+  line-height: 1.45;
+}
+
+/* Launch Gate (Singular CTA Rule) */
+.ritual-launch-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px 0 12px;
+  margin-top: 8px;
+}
+
+.btn-ritual-launch {
+  background: #10B981;
+  color: #090D16;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 16px 40px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
+}
+
+.btn-ritual-launch:hover {
+  background: #34D399;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -4px rgba(16, 185, 129, 0.5);
+}
+
+.ritual-launch-hint {
+  font-size: 12px;
+  color: #64748B;
+  letter-spacing: 0.02em;
+}
+
+.ritual-launch-hint kbd {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94A3B8;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+/* ==========================================================================
+   SIDEBAR TOGGLE (COLLAPSE / EXPAND)
+   ========================================================================== */
+.cockpit-container.sidebar-collapsed {
+  grid-template-columns: 0px 1fr !important;
+}
+
+.cockpit-container.sidebar-collapsed .sidebar-hud {
+  display: none !important;
+}
+
+.btn-sidebar-toggle {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.btn-sidebar-toggle:hover {
+  border-color: #38BDF8;
+  color: #38BDF8;
+}
+
+.btn-expand-sidebar {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  background: #090D16;
+  border: 1px solid #334155;
+  color: #F8FAFC;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+  transition: all 0.15s ease;
+}
+
+.cockpit-container.sidebar-collapsed .btn-expand-sidebar {
+  display: flex !important;
+}
+
+.btn-expand-sidebar:hover {
+  background: #1E293B;
+  border-color: #38BDF8;
+  color: #38BDF8;
+  transform: translateX(2px);
+}
+
+/* ==========================================================================
+   PRE-CALL RITUAL IN-PLACE EDIT MODE
+   ========================================================================== */
+.is-editing .precall-ritual-view [contenteditable="true"] {
+  border: 1px dashed rgba(56, 189, 248, 0.4) !important;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: text;
+  user-select: text;
+  transition: all 0.15s ease;
+}
+
+.is-editing .precall-ritual-view [contenteditable="true"]:hover {
+  border-color: #38BDF8 !important;
+  background-color: rgba(56, 189, 248, 0.08) !important;
+}
+
+.is-editing .precall-ritual-view [contenteditable="true"]:focus {
+  border-color: #38BDF8 !important;
+  background-color: rgba(56, 189, 248, 0.15) !important;
+  outline: none;
+}
+
+/* ==========================================================================
+   DYNAMIC CARD ADD & DELETE CONTROLS (EDIT MODE)
+   ========================================================================== */
+.btn-card-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #F87171;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  transition: all 0.15s ease;
+  z-index: 10;
+}
+
+.btn-card-delete:hover {
+  background: #EF4444;
+  color: #FFFFFF;
+  border-color: #EF4444;
+  transform: scale(1.08);
+}
+
+.btn-card-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 16px;
+  margin-top: 12px;
+  background: rgba(56, 189, 248, 0.05);
+  border: 1px dashed rgba(56, 189, 248, 0.4);
+  color: #38BDF8;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all 0.15s ease;
+}
+
+.btn-card-add:hover {
+  background: rgba(56, 189, 248, 0.14);
+  border-color: #38BDF8;
+  color: #FFFFFF;
+}
+
+.btn-add-obj {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  margin-top: 8px;
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px dashed rgba(245, 158, 11, 0.4);
+  color: var(--color-amber);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  transition: all 0.15s ease;
+}
+
+.btn-add-obj:hover {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: var(--color-amber);
+  color: #FFFFFF;
+}
+
+.obj-item-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.obj-item-row .obj-btn {
+  flex: 1;
+}
+
+.btn-obj-delete {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #F87171;
+  width: 24px;
+  height: 28px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  transition: all 0.15s ease;
+}
+
+.btn-obj-delete:hover {
+  background: #EF4444;
+  color: #FFFFFF;
+}
+
+
+
+

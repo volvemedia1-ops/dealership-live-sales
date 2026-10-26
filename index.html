@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dealership Live Sales</title>
+  <link rel="stylesheet" href="styles.css?v=kea">
+</head>
+<body>
+
+  <!-- PANIC EMERGENCY BLANK OVERLAY (PRESS 'B') -->
+  <div id="panic-overlay" title="Emergency Blanking Mode Active. Press 'B' or 'Esc' to exit."></div>
+
+  <!-- LAUNCH MODE SELECTION MODAL (AESTHETIC MINIMAL MODERN APP) -->
+  <div id="mode-select-modal" class="mode-modal-overlay">
+    <div class="mode-modal-card">
+      <div class="mode-modal-badge">
+        <span class="badge-pulse-dot"></span>
+        <span>Dealership Live Sales</span>
+      </div>
+      <h1 class="mode-modal-title">Select Workspace</h1>
+      <p class="mode-modal-subtitle">Choose your active session format to begin</p>
+      <div class="mode-modal-options">
+        <button class="btn-mode-card card-coldcall" id="modal-select-coldcall">
+          <div class="mode-card-header">
+            <div class="mode-card-icon">📞</div>
+            <div class="mode-card-meta">
+              <span class="mode-tag tag-coldcall">Outbound</span>
+              <kbd class="mode-kbd">1</kbd>
+            </div>
+          </div>
+          <div class="mode-card-body">
+            <div class="mode-card-title-row">
+              <span class="mode-card-title">Cold Call Teleprompter</span>
+              <span class="card-arrow">→</span>
+            </div>
+            <p class="mode-card-desc">Live teleprompter, vocal pacing cues &amp; instant battlecards</p>
+          </div>
+        </button>
+        <button class="btn-mode-card card-closer" id="modal-select-closer">
+          <div class="mode-card-header">
+            <div class="mode-card-icon">🤝</div>
+            <div class="mode-card-meta">
+              <span class="mode-tag tag-closer">15-Min Closer</span>
+              <kbd class="mode-kbd">2</kbd>
+            </div>
+          </div>
+          <div class="mode-card-body">
+            <div class="mode-card-title-row">
+              <span class="mode-card-title">C.L.O.S.E.R. Sales Meeting</span>
+              <span class="card-arrow">→</span>
+            </div>
+            <p class="mode-card-desc">Diagnostic closing engine, reactive bleed math &amp; 3 decisions</p>
+          </div>
+        </button>
+        <button class="btn-mode-card card-cbfleads" id="modal-select-cbfleads">
+          <div class="mode-card-header">
+            <div class="mode-card-icon">🚗</div>
+            <div class="mode-card-meta">
+              <span class="mode-tag tag-cbfleads">B2C Onboarding</span>
+              <kbd class="mode-kbd">3</kbd>
+            </div>
+          </div>
+          <div class="mode-card-body">
+            <div class="mode-card-title-row">
+              <span class="mode-card-title">CBF Leads Onboarding</span>
+              <span class="card-arrow">→</span>
+            </div>
+            <p class="mode-card-desc">Turn-down buyer intake, 4 vacation pillars &amp; trial reveal</p>
+          </div>
+        </button>
+      </div>
+      <div class="mode-modal-footer">
+        Press <kbd>1</kbd>, <kbd>2</kbd>, or <kbd>3</kbd> for instant launch &bull; <kbd>Esc</kbd> to resume
+      </div>
+    </div>
+  </div>
+
+  <!-- COLD CALL SUB-CHOICE MODAL (RITUAL VS TELEPROMPTER) -->
+  <div id="modal-coldcall-subchoice" class="mode-modal-overlay" style="display: none;">
+    <div class="mode-modal-card">
+      <div class="mode-modal-badge">
+        <span class="badge-pulse-dot"></span>
+        <span>📞 Outbound Dealership Dials</span>
+      </div>
+      <h1 class="mode-modal-title">Cold Call Workspace</h1>
+      <p class="mode-modal-subtitle">Prepare your mental state or jump straight to live dialing</p>
+      <div class="mode-modal-options subchoice-options">
+        <button class="btn-mode-card card-ritual" id="subchoice-select-ritual">
+          <div class="mode-card-header">
+            <div class="mode-card-icon">🧘</div>
+            <div class="mode-card-meta">
+              <span class="mode-tag tag-ritual">Pre-Flight</span>
+              <kbd class="mode-kbd">R</kbd>
+            </div>
+          </div>
+          <div class="mode-card-body">
+            <div class="mode-card-title-row">
+              <span class="mode-card-title">Pre-Flight Mental Ritual</span>
+              <span class="card-arrow">→</span>
+            </div>
+            <p class="mode-card-desc">Somatic grounding, statistical bell curve &amp; W1 non-negotiables</p>
+          </div>
+        </button>
+        <button class="btn-mode-card card-script" id="subchoice-select-script">
+          <div class="mode-card-header">
+            <div class="mode-card-icon">🎙️</div>
+            <div class="mode-card-meta">
+              <span class="mode-tag tag-coldcall">First Touch</span>
+              <kbd class="mode-kbd">S</kbd>
+            </div>
+          </div>
+          <div class="mode-card-body">
+            <div class="mode-card-title-row">
+              <span class="mode-card-title">Live Dial Teleprompter</span>
+              <span class="card-arrow">→</span>
+            </div>
+            <p class="mode-card-desc">Direct to Stage 1 Switchboard, 3-beat pacing &amp; battlecards</p>
+          </div>
+        </button>
+        <button class="btn-mode-card card-followup" id="subchoice-select-followup">
+          <div class="mode-card-header">
+            <div class="mode-card-icon">🔄</div>
+            <div class="mode-card-meta">
+              <span class="mode-tag tag-followup">Follow-Up</span>
+              <kbd class="mode-kbd">F</kbd>
+            </div>
+          </div>
+          <div class="mode-card-body">
+            <div class="mode-card-title-row">
+              <span class="mode-card-title">Follow-Up Dials</span>
+              <span class="card-arrow">→</span>
+            </div>
+            <p class="mode-card-desc">Ghost recovery touchpoint, priority check &amp; funnel exit</p>
+          </div>
+        </button>
+      </div>
+      <div class="mode-modal-footer">
+        Press <kbd>R</kbd> for Ritual &bull; <kbd>S</kbd> for Direct Script &bull; <kbd>F</kbd> for Follow-Up &bull; <kbd>Esc</kbd> to return
+      </div>
+    </div>
+  </div>
+
+  <!-- SCROLLABLE OBJECTION BATTLECARD SLOT (TOP RIGHT) -->
+  <div id="fixed-objection-slot">
+    <div class="obj-slot-header">
+      <span class="obj-slot-title" id="obj-slot-title">Objection Triggered</span>
+      <button class="obj-slot-close" id="obj-slot-close" title="Dismiss (Esc)">&times;</button>
+    </div>
+    <div class="obj-slot-summary" id="obj-slot-summary"></div>
+    <div class="obj-slot-script" id="obj-slot-script"></div>
+  </div>
+
+  <div class="cockpit-container">
+    
+    <!-- LEFT SIDEBAR HUD -->
+    <aside class="sidebar-hud">
+      <div class="hud-header">
+        <div class="brand-badge" id="brand-badge">Dealership Live Sales</div>
+        <div class="font-controls">
+          <button class="btn-ctrl btn-ritual-toggle coldcall-only-feature" id="btn-toggle-ritual" title="Pre-Flight Mental Ritual (R)">🧘 Ritual</button>
+          <button class="btn-ctrl" id="btn-font-down" title="Decrease Font Size">-</button>
+          <button class="btn-ctrl" id="btn-font-up" title="Increase Font Size">+</button>
+          <button class="btn-ctrl btn-edit-toggle" id="btn-toggle-edit" title="Edit Script Directly (E)">✏️ Edit</button>
+          <button class="btn-ctrl btn-sidebar-toggle" id="btn-collapse-sidebar" title="Close Sidebar (Hotkey: [)">◀ Close</button>
+        </div>
+      </div>
+
+      <!-- MODE SWITCHER -->
+      <div class="mode-switcher" id="mode-switcher">
+        <button class="btn-mode" id="btn-mode-coldcall">📞 Cold Call</button>
+        <button class="btn-mode" id="btn-mode-closer">🤝 C.L.O.S.E.R.</button>
+        <button class="btn-mode" id="btn-mode-cbfleads">🚗 CBF Leads</button>
+      </div>
+
+      <!-- 15-MINUTE PACING TIMER (CLOSER MEETING MODE ONLY) -->
+      <div class="timer-card closer-only-feature" id="timer-card">
+        <div class="timer-digits" id="timer-display">15:00</div>
+        <div class="timer-label" id="timer-phase-label">PHASE 1: DIAGNOSIS (0-5m)</div>
+        <div class="timer-actions">
+          <button class="timer-btn" id="btn-timer-toggle">Start [Space]</button>
+          <button class="timer-btn" id="btn-timer-reset">Reset [R+R]</button>
+        </div>
+      </div>
+
+      <!-- REACTIVE BLEED CALCULATOR (CLOSER MEETING MODE ONLY) -->
+      <div class="calc-card closer-only-feature" id="calc-card">
+        <div class="calc-title">
+          <span>Live Bleed Math</span>
+          <span id="calc-status" style="font-size: 10px; color: var(--color-green);">SYNCED</span>
+        </div>
+        
+        <div class="calc-group">
+          <label class="calc-label" for="input-apps">Monthly Submissions</label>
+          <input type="number" id="input-apps" class="calc-input" value="50" min="1" step="5">
+        </div>
+
+        <div class="calc-group">
+          <label class="calc-label" for="input-decline">Turn-Down Rate (%)</label>
+          <input type="number" id="input-decline" class="calc-input" value="50" min="1" max="100" step="5">
+        </div>
+
+        <div class="calc-group">
+          <label class="calc-label" for="input-margin">Avg Gross Margin (R)</label>
+          <input type="number" id="input-margin" class="calc-input" value="20000" min="1000" step="1000">
+        </div>
+
+        <div class="calc-group">
+          <label class="calc-label" for="input-recovered">Target Recovered Units</label>
+          <input type="number" id="input-recovered" class="calc-input" value="5" min="1" max="50" step="1">
+        </div>
+
+        <div class="calc-bleed-summary">
+          <div class="calc-bleed-text">MONTHLY FLOOR BLEED:</div>
+          <div class="calc-bleed-val" id="hud-monthly-bleed">R 500 000</div>
+        </div>
+      </div>
+
+      <!-- DYNAMIC OBJECTION BATTLECARDS CONTAINER -->
+      <div class="objection-triggers" id="objection-triggers-container">
+        <!-- Rendered dynamically by app.js based on active mode -->
+      </div>
+
+      <!-- F&I QUICK NOTES & EMAIL CAPTURE BOX -->
+      <div class="fni-notes-box" id="fni-notes-container">
+        <div class="fni-notes-header">
+          <span class="fni-notes-label">📝 F&amp;I Notes &amp; Email</span>
+          <div class="fni-notes-actions">
+            <button class="btn-notes-tool" id="btn-copy-notes" title="Copy notes to clipboard">📋 Copy</button>
+            <button class="btn-notes-tool" id="btn-clear-notes" title="Clear notes">✕ Clear</button>
+          </div>
+        </div>
+        <textarea id="fni-notes-input" class="fni-notes-textarea" placeholder="Paste or type F&amp;I direct email, cell, notes..." spellcheck="false"></textarea>
+        <div class="fni-notes-footer" id="fni-notes-status">Auto-saved to session</div>
+      </div>
+    </aside>
+
+    <!-- MAIN TELEPROMPTER VIEWPORT -->
+    <main class="teleprompter-viewport" id="teleprompter-viewport">
+      <!-- FLOATING SIDEBAR EXPAND TAB (SHOWN WHEN SIDEBAR IS COLLAPSED) -->
+      <button class="btn-expand-sidebar" id="btn-expand-sidebar" title="Open Sidebar (Hotkey: [)">▶ Sidebar</button>
+
+      <!-- EDIT MODE FLOATING ACTION BAR -->
+      <div id="edit-mode-banner">
+        <div class="edit-banner-info">
+          <span class="edit-banner-title">✏️ EDIT MODE</span>
+          
+          <!-- TEXT COLOR & HIGHLIGHT TOOLBAR -->
+          <div class="edit-format-toolbar" id="edit-format-toolbar">
+            <div class="format-group">
+              <span class="format-label">Color:</span>
+              <button class="btn-color-swatch" data-color="#34D399" title="Mint Green (#34D399)" style="background-color: #34D399;"></button>
+              <button class="btn-color-swatch" data-color="#FBBF24" title="Warm Amber (#FBBF24)" style="background-color: #FBBF24;"></button>
+              <button class="btn-color-swatch" data-color="#38BDF8" title="Electric Cyan (#38BDF8)" style="background-color: #38BDF8;"></button>
+              <button class="btn-color-swatch" data-color="#F87171" title="Coral Red (#F87171)" style="background-color: #F87171;"></button>
+              <button class="btn-color-swatch" data-color="#C084FC" title="Neon Violet (#C084FC)" style="background-color: #C084FC;"></button>
+              <button class="btn-color-swatch" data-color="#FFFFFF" title="Pure White (#FFFFFF)" style="background-color: #FFFFFF;"></button>
+              <label class="custom-color-picker" title="Pick Custom Color">
+                <input type="color" id="text-color-custom" value="#38BDF8">
+                <span>🎨</span>
+              </label>
+            </div>
+
+            <div class="format-divider"></div>
+
+            <div class="format-group">
+              <span class="format-label">Highlight:</span>
+              <button class="btn-hl-swatch" data-hl="rgba(245, 158, 11, 0.4)" title="Amber Glow" style="background-color: rgba(245, 158, 11, 0.4); border-color: #F59E0B;"></button>
+              <button class="btn-hl-swatch" data-hl="rgba(16, 185, 129, 0.4)" title="Emerald Glow" style="background-color: rgba(16, 185, 129, 0.4); border-color: #10B981;"></button>
+              <button class="btn-hl-swatch" data-hl="rgba(56, 189, 248, 0.4)" title="Cyan Glow" style="background-color: rgba(56, 189, 248, 0.4); border-color: #38BDF8;"></button>
+              <button class="btn-hl-swatch" data-hl="rgba(168, 85, 247, 0.4)" title="Purple Glow" style="background-color: rgba(168, 85, 247, 0.4); border-color: #A855F7;"></button>
+              <button class="btn-hl-swatch" data-hl="rgba(244, 63, 94, 0.4)" title="Rose Glow" style="background-color: rgba(244, 63, 94, 0.4); border-color: #F43F5E;"></button>
+              <button class="btn-hl-clear" id="btn-clear-hl" title="Remove Highlight on Selection">🚫 Clear HL</button>
+            </div>
+
+            <div class="format-divider"></div>
+
+            <button class="btn-format-clear" id="btn-clear-format" title="Reset color & highlight on selection">✕ Reset</button>
+          </div>
+        </div>
+        <div class="edit-banner-actions">
+          <button class="btn-edit-action btn-save-disk" id="btn-save-disk">💾 Save Directly to File</button>
+          <button class="btn-edit-action" id="btn-reset-script">↺ Reset to Original</button>
+          <button class="btn-edit-action" id="btn-done-edit">✔ Done</button>
+        </div>
+      </div>
+
+      <div class="webcam-eye-line closer-only-feature">
+        <span class="webcam-eye-label">Webcam Focal Line (Upper Third)</span>
+      </div>
+      <!-- COLD CALL SUB-NAVIGATION BAR (FIRST TOUCH vs FOLLOW-UP vs RITUAL) -->
+      <div class="coldcall-subnav coldcall-only-feature" id="coldcall-subnav">
+        <div class="subnav-pill-group">
+          <button class="btn-subnav-pill active" id="subnav-firsttouch" title="First-Touch Cold Dials (Hotkey: S)">
+            <span class="subnav-icon">🎙️</span>
+            <span>First-Touch Dials</span>
+            <kbd class="subnav-kbd">S</kbd>
+          </button>
+          <button class="btn-subnav-pill" id="subnav-followup" title="Follow-Up &amp; Ghost Recovery (Hotkey: F)">
+            <span class="subnav-icon">🔄</span>
+            <span>Follow-Up Dials</span>
+            <kbd class="subnav-kbd">F</kbd>
+          </button>
+          <button class="btn-subnav-pill" id="subnav-ritual" title="Pre-Flight Mental Ritual (Hotkey: R)">
+            <span class="subnav-icon">🧘</span>
+            <span>Pre-Flight Ritual</span>
+            <kbd class="subnav-kbd">R</kbd>
+          </button>
+        </div>
+      </div>
+      <!-- PRE-FLIGHT MENTAL RITUAL VIEW (TRADING PSYCHOLOGY PREP) -->
+      <div class="precall-ritual-view" id="precall-ritual-view" style="display: none;"></div>
+      <div class="script-stage" id="script-stage">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+    </main>
+
+  </div>
+
+  <script src="script_data.js?v=kea"></script>
+  <script src="app.js?v=kea"></script>
+</body>
+</html>
