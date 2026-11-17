@@ -14,6 +14,7 @@
   const state = {
     mode: 'coldcall', // 'coldcall' | 'closer' | 'cbfleads'
     coldcallSubmode: 'first_touch', // 'first_touch' | 'followup'
+    cbfSubmode: 'screening', // 'screening' | 'closer' | 'offramp'
     isRitualActive: false,
     activeBlockIndex: 0,
     fontBasePx: 18, // Max zoom-out level on start
@@ -35,9 +36,30 @@
       recoveredRevenue: 100000
     },
 
+    // CBF Subprime Risk Tax Math
+    cbfRiskTax: {
+      vehiclePrice: 200000,
+      primeRate: 12.0,
+      subprimeRate: 24.25,
+      months: 72,
+      monthlyTax: 1372,
+      annualTax: 16464,
+      totalTax: 98784
+    },
+
     // Timer State (Closer Mode - Timestamp-driven)
     timer: {
       totalDurationMs: 15 * 60 * 1000, // 15 minutes
+      isRunning: false,
+      startedAt: null,
+      elapsedMs: 0,
+      timerId: null,
+      lastRPressTime: 0
+    },
+
+    // CBF Timer State (Timestamp-driven)
+    cbfTimer: {
+      totalDurationMs: 15 * 60 * 1000, // 15 minutes default for Closer (3 min for Screening)
       isRunning: false,
       startedAt: null,
       elapsedMs: 0,
@@ -79,7 +101,7 @@
   function escapePreservingFormatting(str) {
     if (!str) return '';
     const tokenMap = [];
-    const tokenized = str.replace(/<\/?(span|mark|b|i|u)(?:\s+style="[^"]*")?(?:\s+class="[^"]*")?>/gi, match => {
+    const tokenized = str.replace(/<\/?(span|mark|b|i|u)(?:\s+(?:style|class)="[^"]*")*\s*>/gi, match => {
       const key = `___TAG_${tokenMap.length}___`;
       tokenMap.push({ key, match });
       return key;
@@ -97,6 +119,22 @@
     return escaped;
   }
 
+  function decodeHtmlEntities(str) {
+    if (typeof str !== 'string' || !str) return str || '';
+    let s = str;
+    let prev;
+    do {
+      prev = s;
+      s = s.replace(/&amp;/gi, '&');
+    } while (s !== prev);
+    return s
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&#160;/gi, ' ')
+      .replace(/\u00A0/g, ' ')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>');
+  }
+
   function cleanRichContent(html) {
     if (!html) return '';
     let clean = html
@@ -105,10 +143,65 @@
       .replace(/<\/div>/gi, '')
       .replace(/<br\s*\/?>/gi, '\n');
 
-    clean = clean.replace(/<(?!\/?(?:span|mark|b|i|u)\b)[^>]+>/gi, '');
+    // Strip disallowed HTML tags while keeping span, mark, b, i, u
+    clean = clean.replace(/<\/?(?!(?:span|mark|b|i|u)\b)[a-z!][^>]*>/gi, '');
+
+    // Tokenize allowed formatting tags so entity decoding never alters tag attributes
+    const tagMap = [];
+    clean = clean.replace(/<\/?(?:span|mark|b|i|u)\b[^>]*>/gi, match => {
+      const key = `___RICH_TAG_${tagMap.length}___`;
+      tagMap.push({ key, match });
+      return key;
+    });
+
+    clean = decodeHtmlEntities(clean);
+
+    tagMap.forEach(item => {
+      clean = clean.replace(item.key, item.match);
+    });
+
     clean = clean.replace(/^\n+/, '').replace(/\n+$/, '');
     clean = clean.replace(/<span[^>]*>\s*<\/span>/gi, '');
     return clean;
+  }
+
+  function sanitizeStoredString(str) {
+    if (typeof str !== 'string' || !str) return str || '';
+    // Unwrap any stray pasted editor tags with data-path-to-node
+    let clean = str
+      .replace(/<(b|i)\s+[^>]*data-path-to-node=[^>]*>([\s\S]*?)<\/\1>/gi, '$2')
+      .replace(/<\/?(?:b|i)\s+[^>]*data-path-to-node=[^>]*>/gi, '');
+    const tagMap = [];
+    clean = clean.replace(/<\/?(?:span|mark|b|i|u)(?:\s+(?:style|class)="[^"]*")*\s*>/gi, match => {
+      const key = `___STORED_TAG_${tagMap.length}___`;
+      tagMap.push({ key, match });
+      return key;
+    });
+    clean = decodeHtmlEntities(clean);
+    tagMap.forEach(item => {
+      clean = clean.replace(item.key, item.match);
+    });
+    return clean;
+  }
+
+  function sanitizeDataTree(node, options = {}) {
+    const { stripInternalFlags = false, keyName = '' } = options;
+    if (typeof node === 'string') {
+      if (keyName === 'regexPattern' || keyName === 'color' || keyName === 'id') return node;
+      return sanitizeStoredString(node);
+    }
+    if (Array.isArray(node)) {
+      return node.map(item => sanitizeDataTree(item, { stripInternalFlags, keyName }));
+    }
+    if (node && typeof node === 'object') {
+      const out = {};
+      for (const [k, val] of Object.entries(node)) {
+        if (stripInternalFlags && k === '_isCustomEdited') continue;
+        out[k] = sanitizeDataTree(val, { stripInternalFlags, keyName: k });
+      }
+      return out;
+    }
+    return node;
   }
 
   // =========================================================================
@@ -117,6 +210,11 @@
   function getCurrentSubKey() {
     if (state.mode === 'coldcall' && state.coldcallSubmode === 'followup') {
       return 'coldcall_followup';
+    }
+    if (state.mode === 'cbfleads') {
+      if (state.cbfSubmode === 'screening') return 'cbf_screening';
+      if (state.cbfSubmode === 'offramp') return 'cbf_offramp';
+      return 'cbf_closer';
     }
     return state.mode;
   }
@@ -145,7 +243,7 @@
     return SCRIPT_DATA.objections || [];
   }
 
-  const SCRIPT_SCHEMA_VERSION = '5.4';
+  const SCRIPT_SCHEMA_VERSION = '6.2';
 
   function loadDataForCurrentMode() {
     try {
@@ -154,30 +252,38 @@
         localStorage.removeItem('dealership_cockpit_blocks_coldcall_followup');
         localStorage.removeItem('dealership_cockpit_blocks_closer');
         localStorage.removeItem('dealership_cockpit_blocks_cbfleads');
+        localStorage.removeItem('dealership_cockpit_blocks_cbf_closer');
+        localStorage.removeItem('dealership_cockpit_blocks_cbf_screening');
+        localStorage.removeItem('dealership_cockpit_blocks_cbf_offramp');
         localStorage.removeItem('dealership_cockpit_objs_coldcall');
         localStorage.removeItem('dealership_cockpit_objs_coldcall_followup');
         localStorage.removeItem('dealership_cockpit_objs_closer');
         localStorage.removeItem('dealership_cockpit_objs_cbfleads');
+        localStorage.removeItem('dealership_cockpit_objs_cbf_closer');
+        localStorage.removeItem('dealership_cockpit_objs_cbf_screening');
+        localStorage.removeItem('dealership_cockpit_objs_cbf_offramp');
         localStorage.setItem('dealership_cockpit_schema_ver', SCRIPT_SCHEMA_VERSION);
       }
     } catch (e) {}
 
-    // Load Pre-Call Ritual from Local Storage
+    // Load Pre-Call Ritual from Local Storage (and sanitize any escaped entities)
     try {
       const savedPrecall = localStorage.getItem('dealership_cockpit_precall');
       if (savedPrecall && typeof SCRIPT_DATA !== 'undefined') {
-        SCRIPT_DATA.precall = JSON.parse(savedPrecall);
+        SCRIPT_DATA.precall = sanitizeDataTree(JSON.parse(savedPrecall));
+      } else if (typeof SCRIPT_DATA !== 'undefined' && SCRIPT_DATA.precall) {
+        SCRIPT_DATA.precall = sanitizeDataTree(SCRIPT_DATA.precall);
       }
     } catch (e) {}
 
     // Load Blocks
     const currentKey = getCurrentSubKey();
     const blockStorageKey = 'dealership_cockpit_blocks_' + currentKey;
-    const masterBlocks = getMasterBlocks(state.mode);
+    const masterBlocks = sanitizeDataTree(getMasterBlocks(state.mode));
     try {
       const savedBlocks = localStorage.getItem(blockStorageKey);
       if (savedBlocks) {
-        state.blocks = JSON.parse(savedBlocks);
+        state.blocks = sanitizeDataTree(JSON.parse(savedBlocks));
       } else {
         state.blocks = JSON.parse(JSON.stringify(masterBlocks));
       }
@@ -187,11 +293,11 @@
 
     // Load Objections
     const objStorageKey = 'dealership_cockpit_objs_' + currentKey;
-    const masterObjs = getMasterObjections(state.mode);
+    const masterObjs = sanitizeDataTree(getMasterObjections(state.mode));
     try {
       const savedObjs = localStorage.getItem(objStorageKey);
       if (savedObjs) {
-        state.objections = JSON.parse(savedObjs);
+        state.objections = sanitizeDataTree(JSON.parse(savedObjs));
         masterObjs.forEach(mo => {
           if (!state.objections.some(o => o.id === mo.id)) {
             state.objections.push(JSON.parse(JSON.stringify(mo)));
@@ -361,7 +467,7 @@
             saveBlocksLocally();
           });
         } else {
-          cueText.innerHTML = `👂 ${formatBlockTextWithDiff(block.cue || '', defaultBlock ? defaultBlock.cue : null)}`;
+          cueText.innerHTML = `${state.mode === 'cbfleads' ? '' : '👂 '}${formatBlockTextWithDiff(block.cue || '', defaultBlock ? defaultBlock.cue : null)}`;
         }
         cueEl.appendChild(cueText);
         blockEl.appendChild(cueEl);
@@ -371,7 +477,7 @@
       if (block.stageNote || state.isEditing) {
         const noteEl = document.createElement('div');
         noteEl.className = 'stage-note';
-        noteEl.innerHTML = `<span>🎯</span> `;
+        noteEl.innerHTML = state.mode === 'cbfleads' ? '' : `<span>🎯</span> `;
         const noteSpan = document.createElement('span');
         if (state.isEditing) {
           noteSpan.contentEditable = 'true';
@@ -419,6 +525,17 @@
     html = html.replace(/\{\{annual_bleed\}\}/g, `<span class="token" data-token="annual_bleed">${formatRand(state.math.annualBleed)}</span>`);
     html = html.replace(/\{\{recovered_units\}\}/g, `<span class="token" data-token="recovered_units">${state.math.recoveredUnits}</span>`);
     html = html.replace(/\{\{recovered_revenue\}\}/g, `<span class="token" data-token="recovered_revenue">${formatRand(state.math.recoveredRevenue)}</span>`);
+
+    // CBF Subprime Risk Tax Tokens
+    if (state.cbfRiskTax) {
+      html = html.replace(/\{\{vehicle_price\}\}/g, `<span class="token" data-token="vehicle_price">${formatRand(state.cbfRiskTax.vehiclePrice)}</span>`);
+      html = html.replace(/\{\{prime_rate\}\}/g, `<span class="token" data-token="prime_rate">${state.cbfRiskTax.primeRate}%</span>`);
+      html = html.replace(/\{\{subprime_rate\}\}/g, `<span class="token" data-token="subprime_rate">${state.cbfRiskTax.subprimeRate}%</span>`);
+      html = html.replace(/\{\{risk_tax_monthly\}\}/g, `<span class="token" data-token="risk_tax_monthly">${formatRand(state.cbfRiskTax.monthlyTax)}</span>`);
+      html = html.replace(/\{\{risk_tax_annual\}\}/g, `<span class="token" data-token="risk_tax_annual">${formatRand(state.cbfRiskTax.annualTax)}</span>`);
+      html = html.replace(/\{\{risk_tax_total\}\}/g, `<span class="token" data-token="risk_tax_total">${formatRand(state.cbfRiskTax.totalTax)}</span>`);
+    }
+
     return html;
   }
 
@@ -550,6 +667,72 @@
     if (activeEl) {
       scrollBlockToWebcamEyeLine(activeEl);
     }
+    renderCbfStepper();
+  }
+
+  // Universal beat stepper: grouped progress dots + Back/Next across all workspaces
+  function renderCbfStepper() {
+    const el = document.getElementById('app-stepper') || document.getElementById('cbf-stepper');
+    if (!el) return;
+    if (state.mode === 'coldcall' && state.isRitualActive) {
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = 'block';
+
+    const blocks = state.blocks || [];
+    if (!blocks.length) {
+      el.innerHTML = '';
+      return;
+    }
+
+    const groups = [];
+    const isCbfCloser = state.mode === 'cbfleads' && (state.cbfSubmode || 'screening') === 'closer';
+    const isDealerCloser = state.mode === 'closer';
+    const closerDotLabels = ['C', 'L', 'O', 'S1', 'S2', 'E1', 'E2', 'R'];
+
+    blocks.forEach((b, i) => {
+      let g = (b.phaseName || ('Phase ' + (b.phase || 1))).trim();
+      let grp = groups[groups.length - 1];
+      if (!grp || grp.name !== g) { grp = { name: g, items: [] }; groups.push(grp); }
+      grp.items.push(i);
+    });
+
+    const cur = state.activeBlockIndex;
+    const curBlock = blocks[cur] || {};
+    const curPhase = curBlock.phaseName || '';
+
+    el.innerHTML = `
+      <div class="stp-top">
+        <span class="stp-count">
+          Beat <strong>${cur + 1}</strong> of ${blocks.length}
+          ${curPhase ? `&middot; <span style="color: var(--cbf-accent); font-weight: 600;">${escapeHtml(curPhase)}</span>` : ''}
+        </span>
+        <span class="stp-nav">
+          <button class="stp-btn" id="stp-back" ${cur === 0 ? 'disabled' : ''}>Back <kbd>&larr;</kbd></button>
+          <button class="stp-btn stp-btn-primary" id="stp-next" ${cur >= blocks.length - 1 ? 'disabled' : ''}>Next <kbd>&rarr;</kbd></button>
+        </span>
+      </div>
+      <div class="stp-groups">
+        ${groups.map(g => `
+          <div class="stp-group">
+            <div class="stp-group-name">${escapeHtml(g.name)}</div>
+            <div class="stp-dots">
+              ${g.items.map(i => {
+                let label = i + 1;
+                if (isCbfCloser && closerDotLabels[i]) {
+                  label = closerDotLabels[i];
+                }
+                const title = escapeHtml(blocks[i].section || blocks[i].phaseName || '');
+                return `<button class="stp-dot ${i < cur ? 'done' : ''} ${i === cur ? 'current' : ''}" data-idx="${i}" title="${title}">${label}</button>`;
+              }).join('')}
+            </div>
+          </div>`).join('')}
+      </div>`;
+    el.querySelectorAll('.stp-dot').forEach(d => d.addEventListener('click', () => setActiveBlock(parseInt(d.dataset.idx, 10))));
+    const back = el.querySelector('#stp-back'), next = el.querySelector('#stp-next');
+    if (back) back.addEventListener('click', () => stepBlock(-1));
+    if (next) next.addEventListener('click', () => stepBlock(1));
   }
 
   function scrollBlockToWebcamEyeLine(blockEl) {
@@ -589,13 +772,29 @@
   const objSlotScript = document.getElementById('obj-slot-script');
 
   function showObjection(objId) {
+    const currentKey = getCurrentSubKey();
     const objs = (state.objections && state.objections.length) ? state.objections : getMasterObjections(state.mode);
-    const obj = objs.find(o => o.id === objId);
+    const failBranches = (typeof SCRIPT_DATA !== 'undefined' && SCRIPT_DATA[currentKey] && SCRIPT_DATA[currentKey].failBranches)
+      ? SCRIPT_DATA[currentKey].failBranches
+      : ((typeof SCRIPT_DATA !== 'undefined' && SCRIPT_DATA[state.mode] && SCRIPT_DATA[state.mode].failBranches) ? SCRIPT_DATA[state.mode].failBranches : []);
+
+    let obj = objs.find(o => o.id === objId);
+    let isFail = false;
+    if (!obj) {
+      obj = failBranches.find(f => f.id === objId);
+      if (obj) isFail = true;
+    }
     if (!obj) return;
 
     state.activeObjectionId = objId;
 
-    if (state.isEditing) {
+    if (isFail) {
+      fixedObjSlot.classList.add('is-fail-branch');
+    } else {
+      fixedObjSlot.classList.remove('is-fail-branch');
+    }
+
+    if (state.isEditing && !isFail) {
       objSlotTitle.contentEditable = 'true';
       objSlotTitle.spellcheck = false;
       objSlotTitle.innerText = obj.title;
@@ -625,7 +824,7 @@
       };
     } else {
       objSlotTitle.contentEditable = 'false';
-      objSlotTitle.textContent = obj.title;
+      objSlotTitle.textContent = (isFail ? 'Fail branch: ' : '') + obj.title;
       objSlotTitle.oninput = null;
 
       objSlotSummary.contentEditable = 'false';
@@ -648,6 +847,7 @@
   function dismissObjection() {
     state.activeObjectionId = null;
     fixedObjSlot.classList.remove('visible');
+    fixedObjSlot.classList.remove('is-fail-branch');
     document.querySelectorAll('.obj-btn').forEach(btn => btn.classList.remove('active-obj'));
   }
 
@@ -678,11 +878,12 @@
   function renderObjectionButtons() {
     const container = document.getElementById('objection-triggers-container');
     if (!container) return;
+    const currentKey = getCurrentSubKey();
     const objs = (state.objections && state.objections.length) ? state.objections : getMasterObjections(state.mode);
 
     container.innerHTML = `
       <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
-        Cards
+        ${state.mode === 'cbfleads' ? 'Objections' : 'Cards'}
       </div>
     `;
 
@@ -757,6 +958,51 @@
 
       container.appendChild(row);
     });
+
+    // Standby Fail Branches in Sidebar
+    const failBranches = (typeof SCRIPT_DATA !== 'undefined' && SCRIPT_DATA[currentKey] && SCRIPT_DATA[currentKey].failBranches)
+      ? SCRIPT_DATA[currentKey].failBranches
+      : ((typeof SCRIPT_DATA !== 'undefined' && SCRIPT_DATA[state.mode] && SCRIPT_DATA[state.mode].failBranches) ? SCRIPT_DATA[state.mode].failBranches : []);
+
+    if (failBranches && failBranches.length > 0) {
+      const failSection = document.createElement('div');
+      failSection.className = 'fail-branches-section';
+      failSection.innerHTML = `
+        <div class="fail-branch-header">
+          <span>Fail branches</span><span class="fail-branch-sub">Standby</span>
+        </div>
+      `;
+
+      failBranches.forEach(fb => {
+        const row = document.createElement('div');
+        row.className = 'obj-item-row';
+
+        const btn = document.createElement('button');
+        btn.className = 'obj-btn fail-branch-btn';
+        if (state.activeObjectionId === fb.id) {
+          btn.classList.add('active-obj');
+        }
+        btn.dataset.objId = fb.id;
+        btn.innerHTML = `
+          <span class="obj-btn-title" style="color: #FCA5A5;">${escapeHtml(fb.title)}</span>
+          <div class="obj-btn-actions">
+            <span class="hotkey-badge-fail">${escapeHtml(fb.triggerKey)}</span>
+          </div>
+        `;
+
+        btn.addEventListener('click', () => {
+          if (state.activeObjectionId === fb.id) {
+            dismissObjection();
+          } else {
+            showObjection(fb.id);
+          }
+        });
+        row.appendChild(btn);
+        failSection.appendChild(row);
+      });
+
+      container.appendChild(failSection);
+    }
 
     // In edit mode, add a button to add a new objection card
     if (state.isEditing) {
@@ -1220,12 +1466,19 @@
 
     if (brandBadge) {
       if (newMode === 'coldcall') {
-        brandBadge.textContent = state.coldcallSubmode === 'followup' ? '📞 Cold Call • Follow-Up' : '📞 Cold Call • First Touch';
+        brandBadge.textContent = state.coldcallSubmode === 'followup' ? 'Cold Call · Follow-Up' : 'Cold Call · First Touch';
       } else if (newMode === 'cbfleads') {
-        brandBadge.textContent = '🚗 CBF Leads';
+        brandBadge.textContent = 'CBF Leads';
       } else {
         brandBadge.textContent = 'Dealership Live Sales';
       }
+    }
+
+    const wsCurrentName = document.getElementById('ws-current-name');
+    if (wsCurrentName) {
+      if (newMode === 'coldcall') wsCurrentName.textContent = 'Cold Call';
+      else if (newMode === 'closer') wsCurrentName.textContent = 'Dealer Closer';
+      else if (newMode === 'cbfleads') wsCurrentName.textContent = 'CBF Leads';
     }
 
     // Dynamic HUD notes context for CBF Leads vs Dealer
@@ -1253,6 +1506,8 @@
     if (newMode === 'closer') {
       calculateMath();
       resetTimer();
+    } else if (newMode === 'cbfleads') {
+      setCbfSubmode(state.cbfSubmode || 'closer');
     }
   }
 
@@ -1465,6 +1720,212 @@
   if (btnTimerReset) btnTimerReset.addEventListener('click', resetTimer);
 
   // =========================================================================
+  // CBF LEADS SUBMODE CONTROLLER & SECTION NAVIGATION
+  // =========================================================================
+  const btnCbfSecCloser = document.getElementById('btn-cbf-sec-closer');
+  const btnCbfSecScreening = document.getElementById('btn-cbf-sec-screening');
+  const btnCbfSecOfframp = document.getElementById('btn-cbf-sec-offramp');
+  const subnavCbfCloser = document.getElementById('subnav-cbf-closer');
+  const subnavCbfScreening = document.getElementById('subnav-cbf-screening');
+  const subnavCbfOfframp = document.getElementById('subnav-cbf-offramp');
+
+  function updateCbfSubnavPills() {
+    const sub = state.cbfSubmode || 'closer';
+    document.body.classList.toggle('cbf-submode-closer', sub === 'closer');
+    document.body.classList.toggle('cbf-submode-screening', sub === 'screening');
+    document.body.classList.toggle('cbf-submode-offramp', sub === 'offramp');
+
+    if (btnCbfSecCloser) btnCbfSecCloser.classList.toggle('active', sub === 'closer');
+    if (btnCbfSecScreening) btnCbfSecScreening.classList.toggle('active', sub === 'screening');
+    if (btnCbfSecOfframp) btnCbfSecOfframp.classList.toggle('active', sub === 'offramp');
+
+    if (subnavCbfCloser) subnavCbfCloser.classList.toggle('active', sub === 'closer');
+    if (subnavCbfScreening) subnavCbfScreening.classList.toggle('active', sub === 'screening');
+    if (subnavCbfOfframp) subnavCbfOfframp.classList.toggle('active', sub === 'offramp');
+
+    if (brandBadge && state.mode === 'cbfleads') {
+      if (sub === 'screening') {
+        brandBadge.textContent = 'CBF Leads · Screening';
+      } else if (sub === 'offramp') {
+        brandBadge.textContent = 'CBF Leads · Off-Ramp';
+      } else {
+        brandBadge.textContent = 'CBF Leads · Closer';
+      }
+    }
+  }
+
+  function setCbfSubmode(submode) {
+    state.cbfSubmode = submode;
+    try {
+      localStorage.setItem('dealership_cockpit_cbf_submode', submode);
+    } catch (e) {}
+
+    updateCbfSubnavPills();
+
+    // Reset CBF Timer for current section
+    if (submode === 'screening') {
+      state.cbfTimer.totalDurationMs = 3 * 60 * 1000;
+    } else {
+      state.cbfTimer.totalDurationMs = 15 * 60 * 1000;
+    }
+    resetCbfTimer();
+
+    dismissObjection();
+    loadDataForCurrentMode();
+    renderScript();
+    setActiveBlock(0);
+    renderObjectionButtons();
+
+    if (submode === 'closer') {
+      calculateRiskTax();
+    }
+  }
+
+  if (btnCbfSecCloser) btnCbfSecCloser.addEventListener('click', () => setCbfSubmode('closer'));
+  if (btnCbfSecScreening) btnCbfSecScreening.addEventListener('click', () => setCbfSubmode('screening'));
+  if (btnCbfSecOfframp) btnCbfSecOfframp.addEventListener('click', () => setCbfSubmode('offramp'));
+
+  if (subnavCbfCloser) subnavCbfCloser.addEventListener('click', () => setCbfSubmode('closer'));
+  if (subnavCbfScreening) subnavCbfScreening.addEventListener('click', () => setCbfSubmode('screening'));
+  if (subnavCbfOfframp) subnavCbfOfframp.addEventListener('click', () => setCbfSubmode('offramp'));
+
+  // =========================================================================
+  // CBF SUBPRIME RISK TAX CALCULATOR
+  // =========================================================================
+  const inputCbfVehiclePrice = document.getElementById('input-cbf-vehicle-price');
+  const inputCbfPrimeRate = document.getElementById('input-cbf-prime-rate');
+  const inputCbfSubprimeRate = document.getElementById('input-cbf-subprime-rate');
+  const inputCbfMonths = document.getElementById('input-cbf-months');
+  const hudCbfMonthlyTax = document.getElementById('hud-cbf-monthly-tax');
+  const hudCbfAnnualTax = document.getElementById('hud-cbf-annual-tax');
+  const hudCbfTotalTax = document.getElementById('hud-cbf-total-tax');
+
+  function calculateRiskTax() {
+    if (!inputCbfVehiclePrice || !inputCbfPrimeRate || !inputCbfSubprimeRate || !inputCbfMonths) return;
+
+    const P = parseFloat(inputCbfVehiclePrice.value) || 200000;
+    const primePct = parseFloat(inputCbfPrimeRate.value) || 12.0;
+    const subprimePct = parseFloat(inputCbfSubprimeRate.value) || 24.25;
+    const n = parseInt(inputCbfMonths.value, 10) || 72;
+
+    const r1 = primePct / 100 / 12;
+    const r2 = subprimePct / 100 / 12;
+
+    const primePmt = P * (r1 / (1 - Math.pow(1 + r1, -n)));
+    const subprimePmt = P * (r2 / (1 - Math.pow(1 + r2, -n)));
+    const monthlyTax = Math.max(0, Math.round(subprimePmt - primePmt));
+    const annualTax = Math.round(monthlyTax * 12);
+    const totalTax = Math.round(monthlyTax * n);
+
+    state.cbfRiskTax = {
+      vehiclePrice: P,
+      primeRate: primePct,
+      subprimeRate: subprimePct,
+      months: n,
+      monthlyTax,
+      annualTax,
+      totalTax
+    };
+
+    if (hudCbfMonthlyTax) hudCbfMonthlyTax.textContent = `R ${formatRand(monthlyTax).replace('R ', '')} /mo`;
+    if (hudCbfAnnualTax) hudCbfAnnualTax.textContent = `R ${formatRand(annualTax).replace('R ', '')}`;
+    if (hudCbfTotalTax) hudCbfTotalTax.textContent = `R ${formatRand(totalTax).replace('R ', '')}`;
+
+    // Re-render blocks to update dynamic tokens in script
+    renderScript();
+  }
+
+  [inputCbfVehiclePrice, inputCbfPrimeRate, inputCbfSubprimeRate, inputCbfMonths].forEach(el => {
+    if (el) el.addEventListener('input', calculateRiskTax);
+  });
+
+  // =========================================================================
+  // CBF PACING TIMER (3-MIN SCREENING / 15-MIN CLOSER)
+  // =========================================================================
+  const cbfTimerDisplay = document.getElementById('cbf-timer-display');
+  const cbfTimerPhaseLabel = document.getElementById('cbf-timer-phase-label');
+  const btnCbfTimerToggle = document.getElementById('btn-cbf-timer-toggle');
+  const btnCbfTimerReset = document.getElementById('btn-cbf-timer-reset');
+
+  function updateCbfTimerDisplay() {
+    if (!cbfTimerDisplay || !cbfTimerPhaseLabel) return;
+    const remainingMs = Math.max(0, state.cbfTimer.totalDurationMs - state.cbfTimer.elapsedMs);
+    const totalSec = Math.floor(remainingMs / 1000);
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    cbfTimerDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+    if (state.cbfSubmode === 'screening') {
+      if (totalSec > 120) {
+        cbfTimerPhaseLabel.textContent = 'PHASE 1: ATTRIBUTION & SIEVE (0-1m)';
+        cbfTimerPhaseLabel.style.color = '#38BDF8';
+      } else if (totalSec > 60) {
+        cbfTimerPhaseLabel.textContent = 'PHASE 2: BANK VS DEALER CLARITY (1-2m)';
+        cbfTimerPhaseLabel.style.color = '#FDE68A';
+      } else {
+        cbfTimerPhaseLabel.textContent = 'PHASE 3: 60-MIN UPLOAD COMMIT (2-3m)';
+        cbfTimerPhaseLabel.style.color = '#34D399';
+      }
+    } else {
+      // Closer Consultation (15 Mins)
+      if (totalSec > 8 * 60) {
+        cbfTimerPhaseLabel.textContent = 'PHASE 1: CLINICAL DIAGNOSIS (0-7m)';
+        cbfTimerPhaseLabel.style.color = '#38BDF8';
+      } else {
+        cbfTimerPhaseLabel.textContent = 'PHASE 2: PRESCRIPTION & ACTIVATE (7-15m)';
+        cbfTimerPhaseLabel.style.color = '#FDE68A';
+      }
+    }
+
+    const cbfFill = document.getElementById('cbf-timer-fill');
+    if (cbfFill) cbfFill.style.width = Math.min(100, (state.cbfTimer.elapsedMs / state.cbfTimer.totalDurationMs) * 100) + '%';
+    if (btnCbfTimerToggle) {
+      btnCbfTimerToggle.textContent = state.cbfTimer.isRunning ? 'Pause [Space]' : 'Start [Space]';
+    }
+  }
+
+  function startCbfTimer() {
+    if (state.cbfTimer.isRunning) return;
+    state.cbfTimer.isRunning = true;
+    state.cbfTimer.startedAt = Date.now() - state.cbfTimer.elapsedMs;
+    state.cbfTimer.timerId = setInterval(() => {
+      state.cbfTimer.elapsedMs = Date.now() - state.cbfTimer.startedAt;
+      if (state.cbfTimer.elapsedMs >= state.cbfTimer.totalDurationMs) {
+        state.cbfTimer.elapsedMs = state.cbfTimer.totalDurationMs;
+        stopCbfTimer();
+      }
+      updateCbfTimerDisplay();
+    }, 250);
+    updateCbfTimerDisplay();
+  }
+
+  function stopCbfTimer() {
+    state.cbfTimer.isRunning = false;
+    if (state.cbfTimer.timerId) {
+      clearInterval(state.cbfTimer.timerId);
+      state.cbfTimer.timerId = null;
+    }
+    updateCbfTimerDisplay();
+  }
+
+  function toggleCbfTimer() {
+    if (state.cbfTimer.isRunning) {
+      stopCbfTimer();
+    } else {
+      startCbfTimer();
+    }
+  }
+
+  function resetCbfTimer() {
+    stopCbfTimer();
+    state.cbfTimer.elapsedMs = 0;
+    updateCbfTimerDisplay();
+  }
+
+  if (btnCbfTimerToggle) btnCbfTimerToggle.addEventListener('click', toggleCbfTimer);
+  if (btnCbfTimerReset) btnCbfTimerReset.addEventListener('click', resetCbfTimer);
+
+  // =========================================================================
   // PANIC EMERGENCY BLANK OVERLAY (HOTKEY 'B')
   // =========================================================================
   const panicOverlay = document.getElementById('panic-overlay');
@@ -1614,6 +2075,63 @@
 
   initFormatToolbar();
 
+  const btnGhToken = document.getElementById('btn-gh-token');
+  const GH_OWNER = 'volvemedia1-ops';
+  const GH_REPO = 'dealership-live-sales';
+  const GH_BRANCH = 'main';
+  const GH_PATH = 'script_data.js';
+  const GH_TOKEN_KEY = 'dealership_cockpit_gh_token';
+
+  function utf8ToBase64(str) {
+    const bytes = new TextEncoder().encode(str);
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
+  }
+
+  function manageGitHubToken(customMessage) {
+    let existing = '';
+    try { existing = localStorage.getItem(GH_TOKEN_KEY) || ''; } catch (e) {}
+    const defaultMsg = existing
+      ? 'A GitHub Fine-Grained PAT is currently saved in this browser.\n\n' +
+        '• Paste a new token to replace it\n' +
+        '• Type CLEAR to remove the saved token\n' +
+        '• Click Cancel to keep it unchanged'
+      : 'Enter your GitHub Fine-Grained Personal Access Token (PAT) to save directly to GitHub:\n\n' +
+        '1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens\n' +
+        '2. Repository access: Only select repositories → volvemedia1-ops/dealership-live-sales\n' +
+        '3. Repository permissions: Contents → Read and write\n\n' +
+        '(Stored only in this browser\'s localStorage.)';
+
+    const input = window.prompt(customMessage || defaultMsg, '');
+    if (input === null) return null;
+    const trimmed = input.trim();
+    try {
+      if (trimmed.toUpperCase() === 'CLEAR' || (existing && trimmed === '')) {
+        localStorage.removeItem(GH_TOKEN_KEY);
+        alert('Saved GitHub token cleared from this browser.');
+        return '';
+      }
+      if (trimmed) {
+        localStorage.setItem(GH_TOKEN_KEY, trimmed);
+        return trimmed;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  if (btnGhToken) {
+    btnGhToken.addEventListener('click', () => {
+      const result = manageGitHubToken();
+      if (result) {
+        alert('GitHub token saved in this browser.');
+      }
+    });
+  }
+
   if (btnResetScript) {
     btnResetScript.addEventListener('click', () => {
       if (state.isRitualActive) {
@@ -1628,60 +2146,236 @@
       if (state.mode === 'coldcall') modeLabel = 'Cold Call';
       if (state.mode === 'cbfleads') modeLabel = 'CBF Leads';
       if (confirm(`Reset all ${modeLabel} scripts and cards back to master defaults?`)) {
+        const currentKey = getCurrentSubKey();
+        localStorage.removeItem('dealership_cockpit_blocks_' + currentKey);
+        localStorage.removeItem('dealership_cockpit_objs_' + currentKey);
         localStorage.removeItem('dealership_cockpit_blocks_' + state.mode);
         localStorage.removeItem('dealership_cockpit_objs_' + state.mode);
-        state.blocks = JSON.parse(JSON.stringify(getMasterBlocks(state.mode)));
-        state.objections = JSON.parse(JSON.stringify(getMasterObjections(state.mode)));
-        renderScript();
-        renderObjectionButtons();
-        if (state.activeObjectionId) {
-          showObjection(state.activeObjectionId);
-        }
-        setActiveBlock(0);
-        alert(`${modeLabel} scripts and cards reset to original defaults.`);
+        location.reload();
       }
     });
+  }
+
+  function buildMergedScriptPayload() {
+    saveBlocksLocally();
+    saveObjectionsLocally();
+
+    const base = (typeof SCRIPT_DATA !== 'undefined') ? JSON.parse(JSON.stringify(SCRIPT_DATA)) : {};
+    const allModes = ['closer', 'coldcall', 'coldcall_followup', 'cbfleads', 'cbf_closer', 'cbf_screening', 'cbf_offramp'];
+
+    let hasCbfCloserSaved = false;
+    allModes.forEach(modeKey => {
+      if (!base[modeKey] || typeof base[modeKey] !== 'object') {
+        base[modeKey] = {};
+      }
+      try {
+        const savedBlocks = localStorage.getItem('dealership_cockpit_blocks_' + modeKey);
+        if (savedBlocks) {
+          base[modeKey].blocks = JSON.parse(savedBlocks);
+          if (modeKey === 'cbf_closer') hasCbfCloserSaved = true;
+        }
+      } catch (e) {}
+      try {
+        const savedObjs = localStorage.getItem('dealership_cockpit_objs_' + modeKey);
+        if (savedObjs) {
+          base[modeKey].objections = JSON.parse(savedObjs);
+          if (modeKey === 'cbf_closer') hasCbfCloserSaved = true;
+        }
+      } catch (e) {}
+    });
+
+    if (hasCbfCloserSaved && base.cbf_closer) {
+      base.cbfleads = JSON.parse(JSON.stringify(base.cbf_closer));
+    }
+
+    try {
+      const savedPrecall = localStorage.getItem('dealership_cockpit_precall');
+      if (savedPrecall) {
+        base.precall = JSON.parse(savedPrecall);
+      }
+    } catch (e) {}
+
+    const rawPayload = {
+      version: base.version || '6.2',
+      closer: base.closer || {},
+      coldcall: base.coldcall || {},
+      coldcall_followup: base.coldcall_followup || {},
+      cbf_closer: base.cbf_closer || {},
+      cbf_screening: base.cbf_screening || {},
+      cbf_offramp: base.cbf_offramp || {},
+      cbfleads: base.cbfleads || {},
+      precall: base.precall || {},
+      tokens: state.math,
+      blocks: (base.closer && base.closer.blocks) ? base.closer.blocks : (base.blocks || state.blocks),
+      objections: (base.closer && base.closer.objections) ? base.closer.objections : (base.objections || state.objections)
+    };
+
+    return sanitizeDataTree(rawPayload, { stripInternalFlags: true });
+  }
+
+  function formatScriptDataFile(payloadObj) {
+    return `/**\n * Master Script Data for Dealership Live Sales Cockpit\n * Saved automatically from Cockpit In-Browser Editor\n */\n\nconst SCRIPT_DATA = ${JSON.stringify(payloadObj, null, 2)};\n\nif (typeof module !== "undefined" && module.exports) {\n  module.exports = SCRIPT_DATA;\n}\n`;
+  }
+
+  async function pushScriptToGitHub(token, fileContent) {
+    const apiUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
+    const headers = {
+      'Authorization': 'Bearer ' + token,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    };
+
+    const getRes = await fetch(`${apiUrl}?ref=${encodeURIComponent(GH_BRANCH)}`, {
+      method: 'GET',
+      headers,
+      cache: 'no-store'
+    });
+
+    if (getRes.status === 401 || getRes.status === 403) {
+      const authErr = new Error('GitHub authentication failed (' + getRes.status + ')');
+      authErr.isAuthError = true;
+      authErr.status = getRes.status;
+      throw authErr;
+    }
+    if (!getRes.ok) {
+      throw new Error('GitHub GET failed with HTTP ' + getRes.status);
+    }
+
+    const fileMeta = await getRes.json();
+    const putRes = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: Object.assign({}, headers, { 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        message: 'chore: update script_data.js from live cockpit editor',
+        content: utf8ToBase64(fileContent),
+        sha: fileMeta.sha,
+        branch: GH_BRANCH
+      })
+    });
+
+    if (putRes.status === 401 || putRes.status === 403) {
+      const authErr = new Error('GitHub write permission failed (' + putRes.status + ')');
+      authErr.isAuthError = true;
+      authErr.status = putRes.status;
+      throw authErr;
+    }
+    if (!putRes.ok) {
+      let errMsg = 'GitHub PUT failed with HTTP ' + putRes.status;
+      try {
+        const errJson = await putRes.json();
+        if (errJson && errJson.message) errMsg += ': ' + errJson.message;
+      } catch (e) {}
+      throw new Error(errMsg);
+    }
+
+    return await putRes.json();
+  }
+
+  async function fallbackCopyAndDownload(fileContent, payloadObj) {
+    let copied = false;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText && payloadObj) {
+        await navigator.clipboard.writeText(JSON.stringify(payloadObj, null, 2));
+        copied = true;
+      }
+    } catch (clipErr) {}
+
+    btnSaveDisk.textContent = copied ? '✔ Copied to Clipboard!' : '⬇ Backup Ready';
+    const msg = (copied
+      ? 'Edits saved in browser & copied to clipboard!\n\n'
+      : 'Edits saved in browser!\n\n') +
+      'Click OK to download script_data.js as a file backup, or Cancel to close.';
+    if (fileContent && confirm(msg)) {
+      const blob = new Blob([fileContent], { type: 'application/javascript;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'script_data.js';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    setTimeout(() => { btnSaveDisk.textContent = '💾 Save Directly to File'; }, 3000);
   }
 
   if (btnSaveDisk) {
     btnSaveDisk.addEventListener('click', async () => {
       btnSaveDisk.textContent = 'Saving...';
+      let payload = null;
+      let fileContent = '';
+
       try {
-        if (typeof SCRIPT_DATA !== 'undefined') {
-          const currentKey = getCurrentSubKey();
-          if (!SCRIPT_DATA[currentKey]) SCRIPT_DATA[currentKey] = {};
-          SCRIPT_DATA[currentKey].blocks = state.blocks;
-          SCRIPT_DATA[currentKey].objections = state.objections;
-        }
+        payload = buildMergedScriptPayload();
+        fileContent = formatScriptDataFile(payload);
 
-        const payload = {
-          version: (typeof SCRIPT_DATA !== 'undefined' && SCRIPT_DATA.version) ? SCRIPT_DATA.version : "4.5",
-          closer: (typeof SCRIPT_DATA !== 'undefined' && SCRIPT_DATA.closer) ? SCRIPT_DATA.closer : {},
-          coldcall: (typeof SCRIPT_DATA !== 'undefined' && SCRIPT_DATA.coldcall) ? SCRIPT_DATA.coldcall : {},
-          coldcall_followup: (typeof SCRIPT_DATA !== 'undefined' && SCRIPT_DATA.coldcall_followup) ? SCRIPT_DATA.coldcall_followup : {},
-          cbfleads: (typeof SCRIPT_DATA !== 'undefined' && SCRIPT_DATA.cbfleads) ? SCRIPT_DATA.cbfleads : {},
-          precall: (typeof SCRIPT_DATA !== 'undefined' && SCRIPT_DATA.precall) ? SCRIPT_DATA.precall : {},
-          tokens: state.math,
-          blocks: SCRIPT_DATA.closer ? SCRIPT_DATA.closer.blocks : state.blocks,
-          objections: SCRIPT_DATA.closer ? SCRIPT_DATA.closer.objections : state.objections
-        };
+        let savedLocally = false;
+        try {
+          const res = await fetch('/api/save-script', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) {
+            savedLocally = true;
+          }
+        } catch (localErr) {}
 
-        const res = await fetch('/api/save-script', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
+        if (savedLocally) {
           btnSaveDisk.textContent = '✔ Saved to script_data.js!';
           setTimeout(() => { btnSaveDisk.textContent = '💾 Save Directly to File'; }, 2500);
-        } else {
-          throw new Error('Save API returned ' + res.status);
+          return;
+        }
+
+        // Static host (e.g. GitHub Pages): save directly to GitHub via Contents API
+        let token = '';
+        try { token = localStorage.getItem(GH_TOKEN_KEY) || ''; } catch (e) {}
+
+        if (!token) {
+          const entered = manageGitHubToken(
+            'Enter your GitHub Fine-Grained PAT to commit edits directly to volvemedia1-ops/dealership-live-sales (main):\n\n' +
+            'How to create one:\n' +
+            '1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens\n' +
+            '2. Repository access: Only select repositories → volvemedia1-ops/dealership-live-sales\n' +
+            '3. Repository permissions: Contents → Read and write\n\n' +
+            '(Saved only in this browser. Click Cancel to copy/download instead.)'
+          );
+          if (!entered) {
+            await fallbackCopyAndDownload(fileContent, payload);
+            return;
+          }
+          token = entered;
+        }
+
+        try {
+          await pushScriptToGitHub(token, fileContent);
+          btnSaveDisk.textContent = '✔ Saved to GitHub!';
+          alert('Saved directly to GitHub (volvemedia1-ops/dealership-live-sales on main)!\n\nGitHub Pages will rebuild and deploy within ~30–60 seconds.');
+          setTimeout(() => { btnSaveDisk.textContent = '💾 Save Directly to File'; }, 3000);
+        } catch (ghErr) {
+          if (ghErr && ghErr.isAuthError) {
+            const retryPrompt = confirm(
+              `GitHub rejected your token (HTTP ${ghErr.status}).\n\n` +
+              'Make sure it is a Fine-Grained PAT with Contents: Read & Write on volvemedia1-ops/dealership-live-sales.\n\n' +
+              'Click OK to update/clear your token, or Cancel to copy/download instead.'
+            );
+            if (retryPrompt) {
+              const updated = manageGitHubToken();
+              if (updated) {
+                await pushScriptToGitHub(updated, fileContent);
+                btnSaveDisk.textContent = '✔ Saved to GitHub!';
+                alert('Saved directly to GitHub (volvemedia1-ops/dealership-live-sales on main)!\n\nGitHub Pages will rebuild and deploy within ~30–60 seconds.');
+                setTimeout(() => { btnSaveDisk.textContent = '💾 Save Directly to File'; }, 3000);
+                return;
+              }
+            }
+          } else {
+            alert('Could not push directly to GitHub:\n' + (ghErr && ghErr.message ? ghErr.message : ghErr));
+          }
+          await fallbackCopyAndDownload(fileContent, payload);
         }
       } catch (err) {
-        btnSaveDisk.textContent = 'Saved in Browser Cache';
-        alert('Saved to local browser storage! Note: Make sure "node server.js" is running to save directly to disk.');
-        setTimeout(() => { btnSaveDisk.textContent = '💾 Save Directly to File'; }, 2500);
+        await fallbackCopyAndDownload(fileContent, payload);
       }
     });
   }
@@ -1804,13 +2498,21 @@
       stepBlock(1);
       return;
     }
-    if (e.key === 'k' || e.key === 'K' || e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+    if (((e.key === 'k' || e.key === 'K') && state.mode !== 'cbfleads') || e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
       e.preventDefault();
       stepBlock(-1);
       return;
     }
 
-    // NUMBER KEYS: Jump to Phase/Stage
+    // NUMBER KEYS: In CBF Leads: 1 = Screening, 2 = Closer, 3 = Off-Ramp
+    if (state.mode === 'cbfleads' && ['1', '2', '3'].includes(e.key)) {
+      e.preventDefault();
+      if (e.key === '1') setCbfSubmode('screening');
+      else if (e.key === '2') setCbfSubmode('closer');
+      else if (e.key === '3') setCbfSubmode('offramp');
+      return;
+    }
+
     if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
       e.preventDefault();
       jumpToPhase(parseInt(e.key, 10));
@@ -1842,14 +2544,53 @@
       }
     } else if (state.mode === 'cbfleads') {
       // CBF LEADS HOTKEYS
+      if (e.code === 'Space') {
+        e.preventDefault();
+        toggleCbfTimer();
+        return;
+      }
+
       const key = e.key.toUpperCase();
-      if (key === 'P') { e.preventDefault(); showObjection('obj-cbf-price'); return; }
-      if (key === 'G') { e.preventDefault(); showObjection('obj-cbf-guarantee'); return; }
-      if (key === 'B') { e.preventDefault(); showObjection('obj-cbf-blacklisted'); return; }
-      if (key === 'D') { e.preventDefault(); showObjection('obj-cbf-debtreview'); return; }
-      if (key === 'C') { e.preventDefault(); showObjection('obj-cbf-scam'); return; }
-      if (key === 'T') { e.preventDefault(); showObjection('obj-cbf-timeline'); return; }
       if (key === 'E') { e.preventDefault(); toggleEditMode(); return; }
+
+      // Standby Fail Branch hotkeys: cycles through standby fail branches
+      if (key === 'K') {
+        e.preventDefault();
+        const currentKey = getCurrentSubKey();
+        const failBranches = (typeof SCRIPT_DATA !== 'undefined' && SCRIPT_DATA[currentKey] && SCRIPT_DATA[currentKey].failBranches)
+          ? SCRIPT_DATA[currentKey].failBranches
+          : ((typeof SCRIPT_DATA !== 'undefined' && SCRIPT_DATA[state.mode] && SCRIPT_DATA[state.mode].failBranches) ? SCRIPT_DATA[state.mode].failBranches : []);
+
+        if (failBranches && failBranches.length > 0) {
+          const currentIndex = failBranches.findIndex(fb => fb.id === state.activeObjectionId);
+          if (currentIndex === -1) {
+            showObjection(failBranches[0].id);
+          } else if (currentIndex < failBranches.length - 1) {
+            showObjection(failBranches[currentIndex + 1].id);
+          } else {
+            dismissObjection();
+          }
+        }
+        return;
+      }
+
+      if (state.cbfSubmode === 'screening') {
+        if (key === 'B') { e.preventDefault(); showObjection('obj-scr-statements'); return; }
+        if (key === 'S') { e.preventDefault(); showObjection('obj-scr-scam'); return; }
+        if (key === 'T') { e.preventDefault(); showObjection('obj-scr-busy'); return; }
+        if (key === 'D') { e.preventDefault(); showObjection('obj-scr-dealer'); return; }
+      } else if (state.cbfSubmode === 'offramp') {
+        if (key === 'W') { e.preventDefault(); showObjection('obj-off-why'); return; }
+        if (key === 'D') { e.preventDefault(); showObjection('obj-off-dealer'); return; }
+      } else {
+        // Closer Consultation Hotkeys
+        if (key === 'A') { e.preventDefault(); showObjection('obj-cbf-fee'); return; }
+        if (key === 'G') { e.preventDefault(); showObjection('obj-cbf-guarantee'); return; }
+        if (key === 'D') { e.preventDefault(); showObjection('obj-cbf-dealer'); return; }
+        if (key === 'B') { e.preventDefault(); showObjection('obj-cbf-blacklisted'); return; }
+        if (key === 'S') { e.preventDefault(); showObjection('obj-cbf-scam'); return; }
+        if (key === 'T') { e.preventDefault(); showObjection('obj-cbf-timeline'); return; }
+      }
     } else {
       // CLOSER MEETING HOTKEYS
       if (e.code === 'Space') {
@@ -1895,16 +2636,33 @@
   // Initialize F&I quick notes & email capture
   initFniNotes();
 
-  const savedMode = localStorage.getItem('dealership_cockpit_mode') || 'coldcall';
-  setMode(savedMode);
+  // Check URL query parameters for direct deep-linking (e.g. ?mode=cbfleads&submode=closer)
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramMode = urlParams.get('mode');
+  const paramSubmode = urlParams.get('submode');
 
-  // Always show launch modal on page load as primary operational gateway
-  openModeModal();
+  if (paramMode) {
+    setMode(paramMode);
+    if (paramMode === 'cbfleads' && paramSubmode) {
+      setCbfSubmode(paramSubmode);
+    }
+    closeModeModal();
+  } else {
+    const savedMode = localStorage.getItem('dealership_cockpit_mode') || 'coldcall';
+    setMode(savedMode);
+    // Always show launch modal on page load if no mode param specified
+    openModeModal();
+  }
 
   if (brandBadge) {
     brandBadge.style.cursor = 'pointer';
     brandBadge.title = "Click to switch operational workspace (or press M)";
     brandBadge.addEventListener('click', openModeModal);
+  }
+
+  const btnWorkspaceBack = document.getElementById('btn-workspace-back');
+  if (btnWorkspaceBack) {
+    btnWorkspaceBack.addEventListener('click', openModeModal);
   }
 
 })();

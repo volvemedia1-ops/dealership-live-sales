@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dealership Live Sales</title>
-  <link rel="stylesheet" href="styles.css?v=kea">
+  <link rel="stylesheet" href="styles.css?v=6.2.1">
 </head>
 <body>
 
@@ -152,25 +152,97 @@
   </div>
 
   <div class="cockpit-container">
-    
+
     <!-- LEFT SIDEBAR HUD -->
     <aside class="sidebar-hud">
       <div class="hud-header">
         <div class="brand-badge" id="brand-badge">Dealership Live Sales</div>
         <div class="font-controls">
-          <button class="btn-ctrl btn-ritual-toggle coldcall-only-feature" id="btn-toggle-ritual" title="Pre-Flight Mental Ritual (R)">🧘 Ritual</button>
+          <button class="btn-ctrl btn-ritual-toggle coldcall-only-feature" id="btn-toggle-ritual" title="Pre-Flight Mental Ritual (R)">Ritual [R]</button>
           <button class="btn-ctrl" id="btn-font-down" title="Decrease Font Size">-</button>
           <button class="btn-ctrl" id="btn-font-up" title="Increase Font Size">+</button>
-          <button class="btn-ctrl btn-edit-toggle" id="btn-toggle-edit" title="Edit Script Directly (E)">✏️ Edit</button>
-          <button class="btn-ctrl btn-sidebar-toggle" id="btn-collapse-sidebar" title="Close Sidebar (Hotkey: [)">◀ Close</button>
+          <button class="btn-ctrl btn-edit-toggle" id="btn-toggle-edit" title="Edit Script Directly (E)">Edit [E]</button>
+
         </div>
       </div>
 
-      <!-- MODE SWITCHER -->
-      <div class="mode-switcher" id="mode-switcher">
-        <button class="btn-mode" id="btn-mode-coldcall">📞 Cold Call</button>
-        <button class="btn-mode" id="btn-mode-closer">🤝 C.L.O.S.E.R.</button>
-        <button class="btn-mode" id="btn-mode-cbfleads">🚗 CBF Leads</button>
+      <!-- SINGLE WORKSPACE BACK BUTTON -->
+      <div class="workspace-bar">
+        <button class="btn-workspace-back" id="btn-workspace-back" title="Switch workspace (Hotkey: M)">
+          <span class="ws-back-arrow">&larr;</span>
+          <span class="ws-info">
+            <span class="ws-label">Workspace</span>
+            <span class="ws-name" id="ws-current-name">CBF Leads</span>
+          </span>
+          <kbd class="ws-kbd">M</kbd>
+        </button>
+      </div>
+
+      <!-- CBF SECTION TABS (CBF LEADS MODE ONLY) -->
+      <div class="cbf-section-switcher cbfleads-only-feature" id="cbf-section-switcher" role="tablist">
+        <button class="btn-cbf-section active" id="btn-cbf-sec-screening" title="Screening call (hotkey 1)">
+          <span class="cbf-sec-title">Screening</span>
+          <span class="cbf-sec-sub">Call 1</span>
+        </button>
+        <button class="btn-cbf-section" id="btn-cbf-sec-closer" title="Closer call (hotkey 2)">
+          <span class="cbf-sec-title">Closer</span>
+          <span class="cbf-sec-sub">C.L.O.S.E.R.</span>
+        </button>
+        <button class="btn-cbf-section" id="btn-cbf-sec-offramp" title="Polite exit (hotkey 3)">
+          <span class="cbf-sec-title">Off-Ramp</span>
+          <span class="cbf-sec-sub">60s exit</span>
+        </button>
+      </div>
+
+      <!-- CBF PACING TIMER -->
+      <div class="timer-card cbfleads-only-feature" id="cbf-timer-card">
+        <div class="cbf-card-head">
+          <span class="cbf-card-label">Call timer</span>
+          <span class="timer-label" id="cbf-timer-phase-label">Phase 1: Diagnosis</span>
+        </div>
+        <div class="timer-digits" id="cbf-timer-display">15:00</div>
+        <div class="cbf-timer-bar"><span id="cbf-timer-fill"></span></div>
+        <div class="timer-actions">
+          <button class="timer-btn" id="btn-cbf-timer-toggle">Start [Space]</button>
+          <button class="timer-btn" id="btn-cbf-timer-reset">Reset [R+R]</button>
+        </div>
+      </div>
+
+      <!-- CBF RISK TAX CALCULATOR (CLOSER ONLY) -->
+      <div class="calc-card cbfleads-only-feature cbf-closer-tool" id="cbf-risktax-card">
+        <div class="cbf-card-head">
+          <span class="cbf-card-label">Risk tax</span>
+          <span class="cbf-card-hint" id="cbf-calc-status">Live</span>
+        </div>
+
+        <div class="calc-group">
+          <label class="calc-label" for="input-cbf-vehicle-price">Vehicle price (R)</label>
+          <input type="number" id="input-cbf-vehicle-price" class="calc-input" value="200000" min="20000" step="10000">
+        </div>
+
+        <div class="cbf-calc-row">
+          <div class="calc-group">
+            <label class="calc-label" for="input-cbf-prime-rate">Prime %</label>
+            <input type="number" id="input-cbf-prime-rate" class="calc-input" value="12.0" min="5" max="30" step="0.25">
+          </div>
+          <div class="calc-group">
+            <label class="calc-label" for="input-cbf-subprime-rate">Subprime %</label>
+            <input type="number" id="input-cbf-subprime-rate" class="calc-input" value="24.25" min="10" max="40" step="0.25">
+          </div>
+          <div class="calc-group">
+            <label class="calc-label" for="input-cbf-months">Months</label>
+            <input type="number" id="input-cbf-months" class="calc-input" value="72" min="12" max="84" step="6">
+          </div>
+        </div>
+
+        <div class="cbf-result">
+          <div class="cbf-result-label">Extra they pay every month</div>
+          <div class="cbf-result-val" id="hud-cbf-monthly-tax">R 1,372 /mo</div>
+          <div class="cbf-result-sub">
+            <span>Per year <strong id="hud-cbf-annual-tax">R 16,464</strong></span>
+            <span>Over loan <strong id="hud-cbf-total-tax">R 98,784</strong></span>
+          </div>
+        </div>
       </div>
 
       <!-- 15-MINUTE PACING TIMER (CLOSER MEETING MODE ONLY) -->
@@ -189,7 +261,7 @@
           <span>Live Bleed Math</span>
           <span id="calc-status" style="font-size: 10px; color: var(--color-green);">SYNCED</span>
         </div>
-        
+
         <div class="calc-group">
           <label class="calc-label" for="input-apps">Monthly Submissions</label>
           <input type="number" id="input-apps" class="calc-input" value="50" min="1" step="5">
@@ -244,7 +316,7 @@
       <div id="edit-mode-banner">
         <div class="edit-banner-info">
           <span class="edit-banner-title">✏️ EDIT MODE</span>
-          
+
           <!-- TEXT COLOR & HIGHLIGHT TOOLBAR -->
           <div class="edit-format-toolbar" id="edit-format-toolbar">
             <div class="format-group">
@@ -280,6 +352,7 @@
         </div>
         <div class="edit-banner-actions">
           <button class="btn-edit-action btn-save-disk" id="btn-save-disk">💾 Save Directly to File</button>
+          <button class="btn-edit-action" id="btn-gh-token" title="Update or clear saved GitHub PAT for live saving">🔑 Token</button>
           <button class="btn-edit-action" id="btn-reset-script">↺ Reset to Original</button>
           <button class="btn-edit-action" id="btn-done-edit">✔ Done</button>
         </div>
@@ -292,21 +365,24 @@
       <div class="coldcall-subnav coldcall-only-feature" id="coldcall-subnav">
         <div class="subnav-pill-group">
           <button class="btn-subnav-pill active" id="subnav-firsttouch" title="First-Touch Cold Dials (Hotkey: S)">
-            <span class="subnav-icon">🎙️</span>
             <span>First-Touch Dials</span>
             <kbd class="subnav-kbd">S</kbd>
           </button>
           <button class="btn-subnav-pill" id="subnav-followup" title="Follow-Up &amp; Ghost Recovery (Hotkey: F)">
-            <span class="subnav-icon">🔄</span>
             <span>Follow-Up Dials</span>
             <kbd class="subnav-kbd">F</kbd>
           </button>
           <button class="btn-subnav-pill" id="subnav-ritual" title="Pre-Flight Mental Ritual (Hotkey: R)">
-            <span class="subnav-icon">🧘</span>
             <span>Pre-Flight Ritual</span>
             <kbd class="subnav-kbd">R</kbd>
           </button>
         </div>
+      </div>
+      <!-- CBF BEAT STEPPER (rendered by app.js) -->
+      <div class="app-stepper" id="app-stepper"></div>
+      <!-- hidden legacy pills kept so section hotkeys/JS bindings stay intact -->
+      <div class="cbf-subnav" id="cbf-subnav" style="display:none">
+        <button id="subnav-cbf-closer"></button><button id="subnav-cbf-screening"></button><button id="subnav-cbf-offramp"></button>
       </div>
       <!-- PRE-FLIGHT MENTAL RITUAL VIEW (TRADING PSYCHOLOGY PREP) -->
       <div class="precall-ritual-view" id="precall-ritual-view" style="display: none;"></div>
@@ -317,7 +393,7 @@
 
   </div>
 
-  <script src="script_data.js?v=kea"></script>
-  <script src="app.js?v=kea"></script>
+  <script src="script_data.js?v=6.2.1"></script>
+  <script src="app.js?v=6.2.1"></script>
 </body>
 </html>
