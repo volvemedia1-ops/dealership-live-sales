@@ -2541,6 +2541,8 @@
         if (key === 'T') { e.preventDefault(); showObjection('obj-cc-transunion'); return; }
         if (key === 'H') { e.preventDefault(); showObjection('obj-cc-how'); return; }
         if (key === 'F') { e.preventDefault(); showObjection('obj-cc-privatefni'); return; }
+        if (key === 'A') { e.preventDefault(); showObjection('obj-cc-notime-short'); return; }
+        if (key === 'L') { e.preventDefault(); showObjection('obj-cc-notime-long'); return; }
       }
     } else if (state.mode === 'cbfleads') {
       // CBF LEADS HOTKEYS

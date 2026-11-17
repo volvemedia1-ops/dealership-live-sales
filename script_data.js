@@ -418,6 +418,22 @@ const SCRIPT_DATA = {
         "regexPattern": "\\b(popia|popi act|privacy|rogue|scam|burnt our fingers|personal information|data protection|third party)\\b",
         "bulletSummary": "Customer Consent & F&I Rejection Form Shield",
         "repScript": "I'm happy you care about your customers—we actually don't contact leads without their consent. The way we get a hold of them in the first place is through a form they fill out on their own, which your F&I sends after informing them they got rejected for financing. That completely protects the dealership and ensures you don't share any personal data. That's actually one of the parts we were going to walk through in our meeting—what time did you prefer?"
+      },
+      {
+        "id": "obj-cc-notime-short",
+        "title": "Anytime / No Specific Time (Short)",
+        "triggerKey": "A",
+        "regexPattern": "\\b(call (me )?anytime|anytime (is fine|works)|no specific time|whenever you('re| are) free|just (give me a )?ring)\\b",
+        "bulletSummary": "Acknowledge Walk-Ins -> Competitor Spot Risk -> Quietest Window Re-Ask (09:30 / 10:00 AM)",
+        "repScript": "100%—I understand walk-ins are part of the business, and every sharp floor we work with operates the same way.\n\nThe only reason I ask for an exact time is that we only partner with limited dealerships in your area. Without a time locked on Kea's calendar, that slot stays open and another dealership down the road can grab your spot.\n\nIf a walk-in pulls you away, we can shift it in two seconds on WhatsApp—so it's better to lock the quietest window on your floor now. Does [Day] at 09:30 or 10:00 AM usually have the least traffic?"
+      },
+      {
+        "id": "obj-cc-notime-long",
+        "title": "Anytime / No Specific Time (Long)",
+        "triggerKey": "L",
+        "regexPattern": "\\b(depends on (the )?(floor|traffic)|hard to give a time|play it by ear|walk-ins come first|not sure what time|can't commit to a time)\\b",
+        "bulletSummary": "Acknowledge -> Associate Live Floor -> Competitor Territory Loss + Zero-Trap Walk-In Shield -> Re-Ask (09:30 / 10:00 AM)",
+        "repScript": "100%—I completely understand that walk-ins are part of the business, and you have to put live buyers on the floor first.\n\nEvery Dealer Principal and F&I we work with deals with that exact same unpredictability during the day.\n\nThe reason we don't leave it at \"call anytime\" is two things:\nFirst, we only onboard a capped number of dealerships in your area so we aren't feeding rehabilitated buyers to two competitors on the same street. If there isn't a specific time locked in, Kea's calendar leaves that slot open and another dealership in your area can take your spot.\nSecond, locking a time doesn't trap you—if a customer walks into your office five minutes before, we just shift it on WhatsApp. It's simply better to pencil in the window where you normally see the least floor traffic so your dealership's spot stays reserved.\n\nLooking at [Day], when is the floor usually quietest—does 09:30 or 10:00 AM work better?"
       }
     ]
   },
