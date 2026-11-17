@@ -2872,20 +2872,3 @@ body.mode-coldcall .script-block.active-block .block-text {
   background: var(--cbf-panel) !important;
 }
 
-/* Launch Modal clean cards */
-.mode-modal-card {
-  background: var(--cbf-panel) !important;
-  border: 1px solid var(--cbf-line) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 24px 60px rgba(0,0,0,0.6) !important;
-}
-.btn-mode-card {
-  background: var(--cbf-card) !important;
-  border: 1px solid var(--cbf-line) !important;
-  border-radius: 12px !important;
-  color: var(--cbf-text) !important;
-}
-.btn-mode-card:hover {
-  background: #1C243E !important;
-  border-color: var(--cbf-accent) !important;
-}

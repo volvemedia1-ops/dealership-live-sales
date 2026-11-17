@@ -308,7 +308,7 @@ const SCRIPT_DATA = {
         "section": "",
         "type": "rep",
         "speaker": "Rep",
-        "text": "I'm good, thank you.\n\nThe reason for my call is we're currently working with the F&I departments in dealerships to help recover the vehicle sales they lose to bank declines.\n\nRight now, when a finance application gets turned down, that customer usually walks out and the deal dies.\n\nWhat we do is take those dead turn-downs, fix what caused them to get rejected by the banks, and send that buyer right back to you, the F&I, so you can deliver the car—without any additional work for your team.",
+        "text": "I'm good, thank you.\n\nI needed to reach out to you because we are working with the F&I departments in dealerships to help recover the vehicle sales they lose to bank declines.\nInstead of letting those turned-down buyers walk out dead,\n\nwhat we do is take those dead turn-downs, fix what caused them to get rejected by the banks, and send that buyer right back to you, the F&I, so you can deliver the car—without any additional work for your team.",
         "cue": "Prospect listens actively. Do not pause—seamlessly deliver the Ask in the same breath.",
         "stageNote": "Dealer native dialect: 'recover vehicle sales', 'dead turn-downs', 'right back to you, the F&I'. Zero threat to their commission.",
         "_isCustomEdited": true
@@ -400,8 +400,8 @@ const SCRIPT_DATA = {
         "title": "Group policy handles this",
         "triggerKey": "G",
         "regexPattern": "\\b(group policy|approved vendor|morgan group|motus|bidvest|head office|procurement|only approved)\\b",
-        "bulletSummary": "5-Second Procurement Exit",
-        "repScript": "Understood, [Name]. If head office locks down your vendor book, I won't waste your time. Appreciate the directness, have a great day. [Disconnect -> Next Dial]\n\nask questions so you can equip yourslef for the next person in the future. "
+        "bulletSummary": "Branch Champion -> Head Office Buy-In -> 10-Min Opinion",
+        "repScript": "100%, [Name], and we definitely will speak to Head Office—since they make the final call.\n\nThe reason I’m calling you first is because when we go to Head Office, the first thing they ask is: 'Do our branch managers actually want this on their floor?'\n\nWe’re speaking to the other Dealer Principals in the area as well. If all of you agree that this solves a real headache on the floor, it makes it ten times easier for Head Office to say yes. You aren't signing anything or going behind the group's back—all I'm requesting is a 10-minute call for your honest opinion on whether this makes sense for your specific branch. Then if you're on board, your branch gets the pilot first once Head Office signs off.\n\nDoes Thursday at 09:30 or 10:00 AM work better for a quick 10-minute look?\n\nFallback: \"Fair enough, [Name]. Let me ask you: if I get on a meeting with one of the other dealerships in your group first and that DP gives it the thumbs up, would you then be open to jumping on a call with us?\""
       },
       {
         "id": "obj-cc-transunion",
